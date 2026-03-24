@@ -2556,10 +2556,26 @@
 
 <script>
   // ══════════════════════════════════
+  //  GLOBAL ERROR HANDLER
+  // ══════════════════════════════════
+  window.onerror = function(msg, url, line) {
+    console.error('Global error:', msg, 'line:', line);
+    const el = document.getElementById('authError');
+    if (el) { el.style.display = ''; el.textContent = 'JS Error (line ' + line + '): ' + msg; }
+    return false;
+  };
+
+  // ══════════════════════════════════
   //  SUPABASE CLIENT
   // ══════════════════════════════════
   const SUPABASE_URL = 'https://tlsyajmdxyyainyabakt.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_bWJWgAcBCxjTLKhXredtDA_W8kXadxI';
+
+  if (!window.supabase) {
+    document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif;"><h2>Failed to load Supabase SDK</h2><p>Check your internet connection and refresh.</p></div>';
+    throw new Error('Supabase SDK not loaded');
+  }
+
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let currentUser = null;
 
@@ -3910,8 +3926,8 @@
   }
 
   async function newQuote() {
+    currentQuoteId = null;
     try {
-      currentQuoteId = null;
       document.querySelectorAll('#page-quote input:not([readonly]), #page-quote textarea').forEach(el => el.value = '');
       dateInput.value = today.toISOString().split('T')[0];
       if (taxEnabled) toggleTax();
@@ -3931,19 +3947,18 @@
       attachCounter = 0;
       try { updateAttachCount(); } catch(e) {}
       bizLogoData = null;
-
-      try { await autoFillFromSettings(); } catch(e) { console.warn('Auto-fill error:', e); }
-
       const title = document.querySelector('#page-quote .page-title');
       if (title) title.textContent = 'New Quote';
       const badge = document.querySelector('#page-quote .badge');
       if (badge) badge.textContent = 'Draft';
-
       try { calcAll(); } catch(e) {}
-    } catch(e) {
-      console.error('newQuote error:', e);
-    }
+    } catch(e) { console.error('newQuote error:', e); }
+
+    // Show page immediately
     showPage('quote');
+
+    // Auto-fill from settings in background (non-blocking)
+    autoFillFromSettings().catch(e => console.warn('Auto-fill error:', e));
   }
 
   function editQuote(id) {
@@ -4487,17 +4502,6 @@
       if (invTaxEnabled) toggleInvTax();
       try { resetInvAccordions(); } catch(e) {}
       addInvLine();
-
-      try {
-        const biz = await dbGetProfile();
-        if (biz) {
-          if (biz.biz_name) document.getElementById('invBizName').value = biz.biz_name;
-          if (biz.biz_phone) document.getElementById('invBizPhone').value = biz.biz_phone;
-          if (biz.biz_email) document.getElementById('invBizEmail').value = biz.biz_email;
-          if (biz.biz_address) document.getElementById('invBizAddress').value = biz.biz_address;
-        }
-      } catch(e) { console.warn('Invoice auto-fill error:', e); }
-
       document.getElementById('invPageTitle').textContent = 'New Invoice';
       document.getElementById('invEditTitle').textContent = 'New Invoice';
       document.getElementById('invBadge').textContent = 'Unpaid';
@@ -4505,10 +4509,19 @@
       document.getElementById('invBadge').style.color = 'var(--amber-deep)';
       document.getElementById('invMarkPaidBtn').style.display = '';
       try { calcInvTotals(); } catch(e) {}
-    } catch(e) {
-      console.error('newInvoice error:', e);
-    }
+    } catch(e) { console.error('newInvoice error:', e); }
+
+    // Show page immediately
     showPage('invoice-edit');
+
+    // Auto-fill biz in background (non-blocking)
+    dbGetProfile().then(biz => {
+      if (!biz) return;
+      if (biz.biz_name) document.getElementById('invBizName').value = biz.biz_name;
+      if (biz.biz_phone) document.getElementById('invBizPhone').value = biz.biz_phone;
+      if (biz.biz_email) document.getElementById('invBizEmail').value = biz.biz_email;
+      if (biz.biz_address) document.getElementById('invBizAddress').value = biz.biz_address;
+    }).catch(e => console.warn('Invoice auto-fill error:', e));
   }
 
   function editInvoice(id) {
