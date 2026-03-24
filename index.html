@@ -3925,7 +3925,7 @@
     if (page === 'clients') { refreshClients().then(() => renderClients()); }
   }
 
-  async function newQuote() {
+  function newQuote() {
     currentQuoteId = null;
     try {
       document.querySelectorAll('#page-quote input:not([readonly]), #page-quote textarea').forEach(el => el.value = '');
@@ -4489,7 +4489,7 @@
   }
 
   // ── New / Edit / Save ──
-  async function newInvoice() {
+  function newInvoice() {
     try {
       currentInvId = null;
       document.querySelectorAll('#page-invoice-edit input:not([readonly]), #page-invoice-edit textarea').forEach(el => el.value = '');
@@ -5042,11 +5042,11 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     try { initItemGrids(); } catch(e) {}
     try { initInvItemGrids(); } catch(e) {}
 
-    // Pre-load data
-    await Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]);
+    // Pre-load data in background
+    Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => console.warn('Data preload error:', e));
 
     // Open new quote as landing page
-    await newQuote();
+    newQuote();
     appInitialized = true;
   }
 
