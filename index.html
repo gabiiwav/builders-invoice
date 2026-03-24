@@ -5015,7 +5015,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
       // Pre-load data
       await Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]);
-      showPage('dashboard');
+      newQuote();
     } else {
       currentUser = null;
       document.getElementById('appShell').style.display = 'none';
