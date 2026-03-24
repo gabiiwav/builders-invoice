@@ -3910,17 +3910,18 @@
   }
 
   async function newQuote() {
-    currentQuoteId = null;
-    // Reset form
     try {
+      currentQuoteId = null;
       document.querySelectorAll('#page-quote input:not([readonly]), #page-quote textarea').forEach(el => el.value = '');
       dateInput.value = today.toISOString().split('T')[0];
       if (taxEnabled) toggleTax();
       document.querySelectorAll('#categorySections .item-card').forEach(card => {
         card.classList.remove('checked');
-        card.querySelector('.item-check input').checked = false;
+        const cb = card.querySelector('.item-check input');
+        if (cb) cb.checked = false;
         card.querySelectorAll('.item-card-input').forEach(inp => { inp.disabled = true; inp.value = ''; });
-        card.querySelector('.item-card-total').textContent = '';
+        const tot = card.querySelector('.item-card-total');
+        if (tot) tot.textContent = '';
       });
       document.querySelectorAll('#categorySections .cat-subtotal').forEach(el => { el.textContent = '$0.00'; el.classList.remove('has-value'); });
       document.querySelectorAll('#categorySections .cat-section.open').forEach(s => s.classList.remove('open'));
@@ -3928,18 +3929,20 @@
       lineCounter = 0;
       document.querySelectorAll('.attach-item').forEach(el => el.remove());
       attachCounter = 0;
-      updateAttachCount();
+      try { updateAttachCount(); } catch(e) {}
       bizLogoData = null;
-    } catch(e) { console.warn('Reset error:', e); }
 
-    // Auto-fill from settings
-    try { await autoFillFromSettings(); } catch(e) { console.warn('Auto-fill error:', e); }
+      try { await autoFillFromSettings(); } catch(e) { console.warn('Auto-fill error:', e); }
 
-    // Update title
-    document.querySelector('#page-quote .page-title').textContent = 'New Quote';
-    document.querySelector('#page-quote .badge').textContent = 'Draft';
+      const title = document.querySelector('#page-quote .page-title');
+      if (title) title.textContent = 'New Quote';
+      const badge = document.querySelector('#page-quote .badge');
+      if (badge) badge.textContent = 'Draft';
 
-    calcAll();
+      try { calcAll(); } catch(e) {}
+    } catch(e) {
+      console.error('newQuote error:', e);
+    }
     showPage('quote');
   }
 
@@ -4472,8 +4475,8 @@
 
   // ── New / Edit / Save ──
   async function newInvoice() {
-    currentInvId = null;
     try {
+      currentInvId = null;
       document.querySelectorAll('#page-invoice-edit input:not([readonly]), #page-invoice-edit textarea').forEach(el => el.value = '');
       document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('invNum').value = generateInvNum();
@@ -4482,28 +4485,29 @@
       document.getElementById('invLineItemsBody').innerHTML = '';
       invLineCounter = 0;
       if (invTaxEnabled) toggleInvTax();
-      resetInvAccordions();
+      try { resetInvAccordions(); } catch(e) {}
       addInvLine();
-    } catch(e) { console.warn('Invoice reset error:', e); }
 
-    // Auto-fill biz from settings
-    try {
-      const biz = await dbGetProfile();
-      if (biz) {
-        if (biz.biz_name) document.getElementById('invBizName').value = biz.biz_name;
-        if (biz.biz_phone) document.getElementById('invBizPhone').value = biz.biz_phone;
-        if (biz.biz_email) document.getElementById('invBizEmail').value = biz.biz_email;
-        if (biz.biz_address) document.getElementById('invBizAddress').value = biz.biz_address;
-      }
-    } catch(e) { console.warn('Invoice auto-fill error:', e); }
+      try {
+        const biz = await dbGetProfile();
+        if (biz) {
+          if (biz.biz_name) document.getElementById('invBizName').value = biz.biz_name;
+          if (biz.biz_phone) document.getElementById('invBizPhone').value = biz.biz_phone;
+          if (biz.biz_email) document.getElementById('invBizEmail').value = biz.biz_email;
+          if (biz.biz_address) document.getElementById('invBizAddress').value = biz.biz_address;
+        }
+      } catch(e) { console.warn('Invoice auto-fill error:', e); }
 
-    document.getElementById('invPageTitle').textContent = 'New Invoice';
-    document.getElementById('invEditTitle').textContent = 'New Invoice';
-    document.getElementById('invBadge').textContent = 'Unpaid';
-    document.getElementById('invBadge').style.background = 'var(--amber-pale)';
-    document.getElementById('invBadge').style.color = 'var(--amber-deep)';
-    document.getElementById('invMarkPaidBtn').style.display = '';
-    calcInvTotals();
+      document.getElementById('invPageTitle').textContent = 'New Invoice';
+      document.getElementById('invEditTitle').textContent = 'New Invoice';
+      document.getElementById('invBadge').textContent = 'Unpaid';
+      document.getElementById('invBadge').style.background = 'var(--amber-pale)';
+      document.getElementById('invBadge').style.color = 'var(--amber-deep)';
+      document.getElementById('invMarkPaidBtn').style.display = '';
+      try { calcInvTotals(); } catch(e) {}
+    } catch(e) {
+      console.error('newInvoice error:', e);
+    }
     showPage('invoice-edit');
   }
 
