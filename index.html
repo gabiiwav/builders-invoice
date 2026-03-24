@@ -1409,6 +1409,40 @@
   .auth-error { background:var(--red-pale); color:var(--red); padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; display:none; }
 
   /* ══════════════════════════════════
+     ONBOARDING
+  ══════════════════════════════════ */
+  .onboard-card {
+    background:var(--white); border-radius:16px; border:1px solid var(--border);
+    padding:36px 40px; width:100%; max-width:480px; box-shadow:0 8px 32px rgba(0,0,0,0.06);
+  }
+  .onboard-step-dots { display:flex; justify-content:center; gap:8px; margin-bottom:28px; }
+  .onboard-step-dots .dot {
+    width:8px; height:8px; border-radius:50%; background:var(--border);
+    transition:all 0.3s;
+  }
+  .onboard-step-dots .dot.active { width:24px; border-radius:4px; background:var(--amber); }
+  .onboard-step-dots .dot.done { background:var(--green); }
+  .onboard-emoji { font-size:40px; text-align:center; margin-bottom:12px; }
+  .onboard-title { font-family:var(--font-display); font-size:22px; font-weight:800; text-align:center; color:var(--ink); margin-bottom:4px; }
+  .onboard-sub { font-size:13px; color:var(--gray); text-align:center; margin-bottom:24px; }
+  .ob-trade-grid {
+    display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px;
+  }
+  .ob-trade-btn {
+    padding:10px 12px; border:1.5px solid var(--border); border-radius:8px;
+    background:var(--white); font-family:var(--font-body); font-size:13px;
+    font-weight:500; color:var(--ink); cursor:pointer; transition:all 0.15s;
+    text-align:left;
+  }
+  .ob-trade-btn:hover { border-color:var(--amber); background:var(--amber-pale); }
+  .ob-trade-btn.selected { border-color:var(--amber); background:var(--amber-pale); color:var(--amber-deep); font-weight:600; }
+
+  @media (max-width:500px) {
+    .onboard-card { padding:28px 20px; }
+    .ob-trade-grid { grid-template-columns:repeat(2,1fr); }
+  }
+
+  /* ══════════════════════════════════
      TOAST & SUCCESS OVERLAY
   ══════════════════════════════════ */
   .toast {
@@ -1637,6 +1671,79 @@
         <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
         Continue with Google
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div id="onboardingPage" class="auth-page" style="display:none;">
+  <div class="onboard-card">
+    <div class="onboard-step-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+
+    <!-- Step 1: Welcome + Trade -->
+    <div class="onboard-step" id="obStep1">
+      <div class="onboard-emoji">🏗️</div>
+      <h2 class="onboard-title">Welcome to Builders<span style="color:var(--amber);">Invoice</span></h2>
+      <p class="onboard-sub">Let's set up your account in 60 seconds.</p>
+      <div class="auth-field"><label>Your Name</label><input type="text" id="obName" placeholder="Doug Builder"></div>
+      <div class="auth-field">
+        <label>What's Your Trade?</label>
+        <div class="ob-trade-grid">
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🔨 General</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🏠 Roofing</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">⚡ Electrical</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🔧 Plumbing</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">❄️ HVAC</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🎨 Painting</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🪵 Flooring</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🌿 Landscaping</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🧹 Cleaning</button>
+          <button class="ob-trade-btn" onclick="selectTrade(this)">🛠️ Other</button>
+        </div>
+      </div>
+      <button class="auth-btn auth-btn-primary" onclick="obNext(2)">Continue →</button>
+    </div>
+
+    <!-- Step 2: Business Info -->
+    <div class="onboard-step" id="obStep2" style="display:none;">
+      <div class="onboard-emoji">📋</div>
+      <h2 class="onboard-title">Business Details</h2>
+      <p class="onboard-sub">This info auto-fills on every quote and invoice.</p>
+      <div class="auth-field"><label>Business Name</label><input type="text" id="obBizName" placeholder="Builder Bros LLC"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="auth-field"><label>Phone</label><input type="tel" id="obBizPhone" placeholder="(555) 000-0000" oninput="formatPhone(this)"></div>
+        <div class="auth-field"><label>Email</label><input type="email" id="obBizEmail" placeholder="you@company.com"></div>
+      </div>
+      <div class="auth-field"><label>Address</label><input type="text" id="obBizAddress" placeholder="123 Main St, City, State"></div>
+      <div class="auth-field"><label>License # <span style="font-weight:400;color:var(--gray);">(optional)</span></label><input type="text" id="obBizLicense" placeholder="CON-12345"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="auth-btn" style="background:var(--canvas);color:var(--ink);flex:1;" onclick="obNext(1)">← Back</button>
+        <button class="auth-btn auth-btn-primary" style="flex:2;" onclick="obNext(3)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Defaults -->
+    <div class="onboard-step" id="obStep3" style="display:none;">
+      <div class="onboard-emoji">⚙️</div>
+      <h2 class="onboard-title">Your Defaults</h2>
+      <p class="onboard-sub">Set these once and forget — they'll prefill automatically.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="auth-field"><label>Default Tax Rate</label><div style="display:flex;align-items:center;gap:4px;"><input type="number" id="obTaxRate" value="8" min="0" max="30" step="0.5" style="flex:1;"><span style="font-size:13px;color:var(--gray);">%</span></div></div>
+        <div class="auth-field">
+          <label>Quote Valid For</label>
+          <select id="obValidDays" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:var(--canvas);">
+            <option value="15">15 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="45">45 days</option>
+            <option value="60">60 days</option>
+          </select>
+        </div>
+      </div>
+      <div class="auth-field"><label>Default Notes <span style="font-weight:400;color:var(--gray);">(shows on every quote)</span></label><textarea id="obNotes" placeholder="Payment due upon completion. Thank you for your business!" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:var(--canvas);min-height:70px;resize:vertical;outline:none;"></textarea></div>
+      <div style="display:flex;gap:10px;">
+        <button class="auth-btn" style="background:var(--canvas);color:var(--ink);flex:1;" onclick="obNext(2)">← Back</button>
+        <button class="auth-btn auth-btn-primary" style="flex:2;" onclick="finishOnboarding()">Start Building Quotes 🚀</button>
+      </div>
     </div>
   </div>
 </div>
@@ -5013,6 +5120,83 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   }
 
   // ══════════════════════════════════
+  //  ONBOARDING
+  // ══════════════════════════════════
+  let obSelectedTrade = '';
+
+  function selectTrade(btn) {
+    document.querySelectorAll('.ob-trade-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    obSelectedTrade = btn.textContent.trim();
+  }
+
+  function obNext(step) {
+    document.querySelectorAll('.onboard-step').forEach(s => s.style.display = 'none');
+    document.getElementById('obStep' + step).style.display = '';
+    document.querySelectorAll('.onboard-step-dots .dot').forEach((d, i) => {
+      d.classList.remove('active', 'done');
+      if (i < step - 1) d.classList.add('done');
+      if (i === step - 1) d.classList.add('active');
+    });
+
+    // Pre-fill name from auth if available on step 1
+    if (step === 1 && currentUser) {
+      const nameInput = document.getElementById('obName');
+      if (!nameInput.value) nameInput.value = currentUser.user_metadata?.full_name || '';
+    }
+    // Pre-fill email on step 2
+    if (step === 2 && currentUser) {
+      const emailInput = document.getElementById('obBizEmail');
+      if (!emailInput.value) emailInput.value = currentUser.email || '';
+    }
+  }
+
+  function showOnboarding() {
+    document.getElementById('authPage').style.display = 'none';
+    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('onboardingPage').style.display = 'flex';
+    obNext(1);
+    // Pre-fill name
+    if (currentUser) {
+      document.getElementById('obName').value = currentUser.user_metadata?.full_name || '';
+      document.getElementById('obBizEmail').value = currentUser.email || '';
+    }
+  }
+
+  function finishOnboarding() {
+    const profile = {
+      biz_name: document.getElementById('obBizName').value.trim(),
+      biz_phone: document.getElementById('obBizPhone').value.trim(),
+      biz_email: document.getElementById('obBizEmail').value.trim(),
+      biz_address: document.getElementById('obBizAddress').value.trim(),
+      biz_license: document.getElementById('obBizLicense').value.trim(),
+      default_tax_rate: parseFloat(document.getElementById('obTaxRate').value) || 8,
+      default_valid_days: parseInt(document.getElementById('obValidDays').value) || 30,
+      default_notes: document.getElementById('obNotes').value.trim(),
+    };
+
+    // Save to Supabase in background
+    dbSaveProfile(profile).catch(e => console.warn('Profile save error:', e));
+
+    // Hide onboarding, show app
+    document.getElementById('onboardingPage').style.display = 'none';
+    document.getElementById('appShell').style.display = '';
+
+    // Update nav
+    const name = document.getElementById('obName').value.trim() || currentUser.email.split('@')[0];
+    document.getElementById('navUserName').textContent = name;
+    document.getElementById('navUserEmail').textContent = currentUser.email || '';
+    document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
+
+    // Init grids and go
+    try { initItemGrids(); } catch(e) {}
+    try { initInvItemGrids(); } catch(e) {}
+    Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
+    newQuote();
+    appInitialized = true;
+  }
+
+  // ══════════════════════════════════
   //  INIT — Auth State Listener
   // ══════════════════════════════════
   let appInitialized = false;
@@ -5021,31 +5205,42 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     if (!session || !session.user) {
       currentUser = null;
       document.getElementById('appShell').style.display = 'none';
+      document.getElementById('onboardingPage').style.display = 'none';
       document.getElementById('authPage').style.display = 'flex';
       return;
     }
 
     currentUser = session.user;
 
-    // Update nav user info
+    // Check if user has completed onboarding (has biz_name)
+    try {
+      const profile = await dbGetProfile();
+      if (!profile || !profile.biz_name) {
+        // New user — show onboarding
+        showOnboarding();
+        return;
+      }
+    } catch(e) {
+      console.warn('Profile check error:', e);
+      // If we can't check, just continue to app
+    }
+
+    // Existing user — go straight to app
     const email = currentUser.email || '';
     const name = currentUser.user_metadata?.full_name || email.split('@')[0];
     document.getElementById('navUserName').textContent = name;
     document.getElementById('navUserEmail').textContent = email;
     document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
 
-    // Show app, hide auth
     document.getElementById('authPage').style.display = 'none';
+    document.getElementById('onboardingPage').style.display = 'none';
     document.getElementById('appShell').style.display = '';
 
-    // Re-init grids in case they need it
     try { initItemGrids(); } catch(e) {}
     try { initInvItemGrids(); } catch(e) {}
 
-    // Pre-load data in background
     Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => console.warn('Data preload error:', e));
 
-    // Open new quote as landing page
     newQuote();
     appInitialized = true;
   }
@@ -5057,6 +5252,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       appInitialized = false;
       currentUser = null;
       document.getElementById('appShell').style.display = 'none';
+      document.getElementById('onboardingPage').style.display = 'none';
       document.getElementById('authPage').style.display = 'flex';
     }
     // Ignore TOKEN_REFRESHED — don't re-init
