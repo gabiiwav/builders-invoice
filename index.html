@@ -1628,8 +1628,8 @@
     </div>
     <div class="auth-error" id="authError"></div>
     <div id="authForm">
-      <div class="auth-field"><label>Email</label><input type="email" id="authEmail" placeholder="you@email.com"></div>
-      <div class="auth-field"><label>Password</label><input type="password" id="authPassword" placeholder="••••••••"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="authEmail" placeholder="you@email.com" onkeydown="if(event.key==='Enter')handleAuth()"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="authPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleAuth()"></div>
       <div class="auth-field" id="authNameField" style="display:none;"><label>Full Name</label><input type="text" id="authName" placeholder="Doug Builder"></div>
       <button class="auth-btn auth-btn-primary" id="authSubmitBtn" onclick="handleAuth()">Log In</button>
       <div class="auth-divider">or</div>
@@ -2599,21 +2599,33 @@
         result = await sb.auth.signInWithPassword({ email, password });
       }
 
+      console.log('Auth result:', JSON.stringify(result, null, 2));
+
       if (result.error) {
         showAuthError(result.error.message);
         btn.disabled = false; btn.textContent = authMode === 'login' ? 'Log In' : 'Sign Up';
         return;
       }
 
-      if (authMode === 'signup' && !result.data.session) {
-        showAuthError('Check your email for a confirmation link!');
-        btn.disabled = false; btn.textContent = 'Sign Up';
+      if (authMode === 'signup') {
+        if (result.data.session) {
+          // Signed up and auto-confirmed — onAuthStateChange handles it
+          showAuthError('');
+        } else if (result.data.user && !result.data.session) {
+          // Needs email confirmation
+          document.getElementById('authError').style.display = '';
+          document.getElementById('authError').style.background = 'var(--green-pale)';
+          document.getElementById('authError').style.color = 'var(--green)';
+          document.getElementById('authError').textContent = '✓ Account created! Check your email to confirm, then log in.';
+          btn.disabled = false; btn.textContent = 'Sign Up';
+        }
         return;
       }
 
-      // Success — onAuthStateChange will handle the rest
+      // Login success — onAuthStateChange will handle the rest
     } catch(e) {
-      showAuthError(e.message || 'Something went wrong.');
+      console.error('Auth error:', e);
+      showAuthError(e.message || 'Something went wrong. Check console for details.');
       btn.disabled = false; btn.textContent = authMode === 'login' ? 'Log In' : 'Sign Up';
     }
   }
