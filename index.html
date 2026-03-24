@@ -4998,29 +4998,51 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   // ══════════════════════════════════
   //  INIT — Auth State Listener
   // ══════════════════════════════════
+  let appInitialized = false;
+
+  async function initApp(session) {
+    if (!session || !session.user) {
+      currentUser = null;
+      document.getElementById('appShell').style.display = 'none';
+      document.getElementById('authPage').style.display = 'flex';
+      return;
+    }
+
+    currentUser = session.user;
+
+    // Update nav user info
+    const email = currentUser.email || '';
+    const name = currentUser.user_metadata?.full_name || email.split('@')[0];
+    document.getElementById('navUserName').textContent = name;
+    document.getElementById('navUserEmail').textContent = email;
+    document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
+
+    // Show app, hide auth
+    document.getElementById('authPage').style.display = 'none';
+    document.getElementById('appShell').style.display = '';
+
+    // Re-init grids in case they need it
+    try { initItemGrids(); } catch(e) {}
+    try { initInvItemGrids(); } catch(e) {}
+
+    // Pre-load data
+    await Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]);
+
+    // Open new quote as landing page
+    await newQuote();
+    appInitialized = true;
+  }
+
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (session && session.user) {
-      currentUser = session.user;
-
-      // Update nav user info
-      const email = currentUser.email || '';
-      const name = currentUser.user_metadata?.full_name || email.split('@')[0];
-      document.getElementById('navUserName').textContent = name;
-      document.getElementById('navUserEmail').textContent = email;
-      document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
-
-      // Show app, hide auth
-      document.getElementById('authPage').style.display = 'none';
-      document.getElementById('appShell').style.display = '';
-
-      // Pre-load data
-      await Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]);
-      newQuote();
-    } else {
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      await initApp(session);
+    } else if (event === 'SIGNED_OUT') {
+      appInitialized = false;
       currentUser = null;
       document.getElementById('appShell').style.display = 'none';
       document.getElementById('authPage').style.display = 'flex';
     }
+    // Ignore TOKEN_REFRESHED — don't re-init
   });
 
   // Check for existing session on load
