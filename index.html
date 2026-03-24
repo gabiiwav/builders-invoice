@@ -2685,6 +2685,7 @@
 
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let currentUser = null;
+  let _profileCache = null;
 
   // ══════════════════════════════════
   //  AUTH
@@ -2768,23 +2769,26 @@
   // ══════════════════════════════════
   //  SUPABASE DATA LAYER
   // ══════════════════════════════════
-  async function dbGetProfile() {
+  async function dbGetProfile(forceRefresh) {
+    if (_profileCache && !forceRefresh) return _profileCache;
     try {
       const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
       if (error) {
-        // Profile might not exist yet — create it
         if (error.code === 'PGRST116') {
           await sb.from('profiles').insert({ id: currentUser.id });
-          return { id: currentUser.id };
+          _profileCache = { id: currentUser.id };
+          return _profileCache;
         }
         console.warn('Profile fetch error:', error);
         return null;
       }
+      _profileCache = data;
       return data;
     } catch(e) { console.warn('dbGetProfile error:', e); return null; }
   }
 
   async function dbSaveProfile(profile) {
+    _profileCache = { ...(_profileCache || {}), id: currentUser.id, ...profile };
     await sb.from('profiles').upsert({ id: currentUser.id, ...profile, updated_at: new Date().toISOString() });
   }
 
@@ -3977,10 +3981,10 @@
     document.querySelector('.badge').textContent = q.status || 'Draft';
   }
 
-  async function autoFillFromSettings() {
+  function autoFillFromSettings() {
+    const biz = _profileCache;
+    if (!biz) return;
     try {
-      const biz = await dbGetProfile();
-      if (!biz) return;
       if (biz.biz_name) document.getElementById('bizName').value = biz.biz_name;
       if (biz.biz_phone) document.getElementById('bizPhone').value = biz.biz_phone;
       if (biz.biz_email) document.getElementById('bizEmail').value = biz.biz_email;
@@ -3996,10 +4000,19 @@
         preview.classList.add('has-logo');
         document.getElementById('logoRemoveBtn').style.display = 'inline';
       }
-      // Set quote number
-      await refreshQuotes();
       document.getElementById('estimateNum').value = generateQuoteNum();
-    } catch(e) {}
+    } catch(e) { console.warn('Auto-fill error:', e); }
+  }
+
+  function autoFillInvFromSettings() {
+    const biz = _profileCache;
+    if (!biz) return;
+    try {
+      if (biz.biz_name) document.getElementById('invBizName').value = biz.biz_name;
+      if (biz.biz_phone) document.getElementById('invBizPhone').value = biz.biz_phone;
+      if (biz.biz_email) document.getElementById('invBizEmail').value = biz.biz_email;
+      if (biz.biz_address) document.getElementById('invBizAddress').value = biz.biz_address;
+    } catch(e) { console.warn('Invoice auto-fill error:', e); }
   }
 
   function resetForm() {
@@ -4027,7 +4040,7 @@
     window.scrollTo(0, 0);
 
     if (page === 'dashboard') { refreshQuotes().then(() => renderDashboard()); }
-    if (page === 'settings') { dbGetProfile().then(p => loadSettingsFromProfile(p)); }
+    if (page === 'settings') { dbGetProfile(true).then(p => loadSettingsFromProfile(p)); }
     if (page === 'invoices') { refreshInvoices().then(() => renderInvoices()); }
     if (page === 'clients') { refreshClients().then(() => renderClients()); }
   }
@@ -4064,8 +4077,8 @@
     // Show page immediately
     showPage('quote');
 
-    // Auto-fill from settings in background (non-blocking)
-    autoFillFromSettings().catch(e => console.warn('Auto-fill error:', e));
+    // Auto-fill from cached profile (synchronous)
+    autoFillFromSettings();
   }
 
   function editQuote(id) {
@@ -4621,14 +4634,8 @@
     // Show page immediately
     showPage('invoice-edit');
 
-    // Auto-fill biz in background (non-blocking)
-    dbGetProfile().then(biz => {
-      if (!biz) return;
-      if (biz.biz_name) document.getElementById('invBizName').value = biz.biz_name;
-      if (biz.biz_phone) document.getElementById('invBizPhone').value = biz.biz_phone;
-      if (biz.biz_email) document.getElementById('invBizEmail').value = biz.biz_email;
-      if (biz.biz_address) document.getElementById('invBizAddress').value = biz.biz_address;
-    }).catch(e => console.warn('Invoice auto-fill error:', e));
+    // Auto-fill from cached profile (synchronous)
+    autoFillInvFromSettings();
   }
 
   function editInvoice(id) {
