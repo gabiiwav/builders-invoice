@@ -1651,8 +1651,16 @@
 </head>
 <body>
 
+<!-- ═══ LOADING SCREEN ═══ -->
+<div id="loadingScreen" class="auth-page">
+  <div style="text-align:center;">
+    <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--ink);">Builders<span style="color:var(--amber);">Invoice</span></div>
+    <div style="margin-top:12px;font-size:13px;color:var(--gray);">Loading…</div>
+  </div>
+</div>
+
 <!-- ═══ AUTH PAGE ═══ -->
-<div id="authPage" class="auth-page">
+<div id="authPage" class="auth-page" style="display:none;">
   <div class="auth-card">
     <div class="auth-logo">Builders<span>Invoice</span></div>
     <div class="auth-subtitle">Quotes & invoices for the trades.</div>
@@ -5181,6 +5189,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
   function showOnboarding() {
     appInitialized = true; // Prevent auth listener from re-firing
+    document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('authPage').style.display = 'none';
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('onboardingPage').style.display = 'flex';
@@ -5232,6 +5241,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   async function initApp(session) {
     if (!session || !session.user) {
       currentUser = null;
+      document.getElementById('loadingScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'none';
       document.getElementById('onboardingPage').style.display = 'none';
       document.getElementById('authPage').style.display = 'flex';
@@ -5257,6 +5267,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     }
 
     // Existing user — go straight to app
+    document.getElementById('loadingScreen').style.display = 'none';
     const email = currentUser.email || '';
     const name = currentUser.user_metadata?.full_name || email.split('@')[0];
     document.getElementById('navUserName').textContent = name;
@@ -5299,6 +5310,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   // Check for existing session on load
   sb.auth.getSession().then(({ data: { session } }) => {
     if (!session) {
+      document.getElementById('loadingScreen').style.display = 'none';
       document.getElementById('authPage').style.display = 'flex';
     }
   });
