@@ -5288,9 +5288,25 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   }
 
   let initInProgress = false;
+  let authPageShownByUser = false;
 
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+    if (event === 'INITIAL_SESSION') {
+      // This fires once on page load — determines initial state
+      if (session && session.user) {
+        if (appInitialized || initInProgress) return;
+        initInProgress = true;
+        await initApp(session);
+        initInProgress = false;
+      } else {
+        // No session — show auth page
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('authPage').style.display = 'flex';
+        authPageShownByUser = true;
+      }
+    } else if (event === 'SIGNED_IN') {
+      // Only fires after explicit user sign-in action
+      // Don't interrupt if auth page isn't the one that triggered this
       if (appInitialized || initInProgress) return;
       initInProgress = true;
       await initApp(session);
@@ -5300,18 +5316,11 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       initInProgress = false;
       currentUser = null;
       _profileCache = null;
+      document.getElementById('loadingScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'none';
       document.getElementById('onboardingPage').style.display = 'none';
       document.getElementById('authPage').style.display = 'flex';
-    }
-    // Ignore TOKEN_REFRESHED — don't re-init
-  });
-
-  // Check for existing session on load
-  sb.auth.getSession().then(({ data: { session } }) => {
-    if (!session) {
-      document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('authPage').style.display = 'flex';
+      authPageShownByUser = true;
     }
   });
 </script>
