@@ -2714,6 +2714,12 @@
     const btn = document.getElementById('authSubmitBtn');
     btn.disabled = true; btn.textContent = authMode === 'login' ? 'Logging in…' : 'Creating account…';
 
+    // Safety timeout — reset button after 10s no matter what
+    const safetyTimer = setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = authMode === 'login' ? 'Log In' : 'Sign Up';
+    }, 10000);
+
     try {
       let result;
       if (authMode === 'signup') {
@@ -2723,7 +2729,8 @@
         result = await sb.auth.signInWithPassword({ email, password });
       }
 
-      console.log('Auth result:', JSON.stringify(result, null, 2));
+      console.log('Auth result:', result);
+      clearTimeout(safetyTimer);
 
       if (result.error) {
         showAuthError(result.error.message);
@@ -2733,23 +2740,30 @@
 
       if (authMode === 'signup') {
         if (result.data.session) {
-          // Signed up and auto-confirmed — onAuthStateChange handles it
-          showAuthError('');
+          // Auto-confirmed — onAuthStateChange will fire and handle the rest
+          btn.textContent = 'Success! Loading…';
         } else if (result.data.user && !result.data.session) {
           // Needs email confirmation
-          document.getElementById('authError').style.display = '';
-          document.getElementById('authError').style.background = 'var(--green-pale)';
-          document.getElementById('authError').style.color = 'var(--green)';
-          document.getElementById('authError').textContent = '✓ Account created! Check your email to confirm, then log in.';
+          const errEl = document.getElementById('authError');
+          errEl.style.display = '';
+          errEl.style.background = 'var(--green-pale)';
+          errEl.style.color = 'var(--green)';
+          errEl.textContent = '✓ Account created! Check your email to confirm, then log in.';
+          btn.disabled = false; btn.textContent = 'Sign Up';
+        } else {
+          // Unknown state
+          showAuthError('Something unexpected happened. Try logging in.');
           btn.disabled = false; btn.textContent = 'Sign Up';
         }
         return;
       }
 
-      // Login success — onAuthStateChange will handle the rest
+      // Login success — onAuthStateChange handles the rest
+      btn.textContent = 'Success! Loading…';
     } catch(e) {
+      clearTimeout(safetyTimer);
       console.error('Auth error:', e);
-      showAuthError(e.message || 'Something went wrong. Check console for details.');
+      showAuthError(e.message || 'Something went wrong.');
       btn.disabled = false; btn.textContent = authMode === 'login' ? 'Log In' : 'Sign Up';
     }
   }
@@ -5220,16 +5234,19 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     currentUser = session.user;
 
     // Check if user has completed onboarding (has biz_name)
+    // Timeout after 5s to prevent hanging
+    let profile = null;
     try {
-      const profile = await dbGetProfile();
+      profile = await Promise.race([
+        dbGetProfile(),
+        new Promise(resolve => setTimeout(() => resolve(null), 5000))
+      ]);
       if (!profile || !profile.biz_name) {
-        // New user — show onboarding
         showOnboarding();
         return;
       }
     } catch(e) {
       console.warn('Profile check error:', e);
-      // If we can't check, just continue to app
     }
 
     // Existing user — go straight to app
