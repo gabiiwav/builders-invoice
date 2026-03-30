@@ -2740,8 +2740,10 @@
 
       if (authMode === 'signup') {
         if (result.data.session) {
-          // Auto-confirmed — onAuthStateChange will fire and handle the rest
+          // Auto-confirmed — go directly to onboarding
+          currentUser = result.data.session.user;
           btn.textContent = 'Success! Loading…';
+          showOnboarding();
         } else if (result.data.user && !result.data.session) {
           // Needs email confirmation
           const errEl = document.getElementById('authError');
@@ -2751,15 +2753,16 @@
           errEl.textContent = '✓ Account created! Check your email to confirm, then log in.';
           btn.disabled = false; btn.textContent = 'Sign Up';
         } else {
-          // Unknown state
-          showAuthError('Something unexpected happened. Try logging in.');
+          showAuthError('This email may already be registered. Try logging in instead.');
           btn.disabled = false; btn.textContent = 'Sign Up';
         }
         return;
       }
 
-      // Login success — onAuthStateChange handles the rest
+      // Login success — go directly to app
+      currentUser = result.data.session.user;
       btn.textContent = 'Success! Loading…';
+      initApp(result.data.session);
     } catch(e) {
       clearTimeout(safetyTimer);
       console.error('Auth error:', e);
@@ -2776,7 +2779,11 @@
   async function handleLogout() {
     await sb.auth.signOut();
     currentUser = null;
+    _profileCache = null;
+    appInitialized = false;
+    initInProgress = false;
     document.getElementById('appShell').style.display = 'none';
+    document.getElementById('onboardingPage').style.display = 'none';
     document.getElementById('authPage').style.display = 'flex';
   }
 
@@ -5173,11 +5180,11 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   }
 
   function showOnboarding() {
+    appInitialized = true; // Prevent auth listener from re-firing
     document.getElementById('authPage').style.display = 'none';
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('onboardingPage').style.display = 'flex';
     obNext(1);
-    // Pre-fill name
     if (currentUser) {
       document.getElementById('obName').value = currentUser.user_metadata?.full_name || '';
       document.getElementById('obBizEmail').value = currentUser.email || '';
@@ -5269,12 +5276,19 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     appInitialized = true;
   }
 
+  let initInProgress = false;
+
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (appInitialized || initInProgress) return;
+      initInProgress = true;
       await initApp(session);
+      initInProgress = false;
     } else if (event === 'SIGNED_OUT') {
       appInitialized = false;
+      initInProgress = false;
       currentUser = null;
+      _profileCache = null;
       document.getElementById('appShell').style.display = 'none';
       document.getElementById('onboardingPage').style.display = 'none';
       document.getElementById('authPage').style.display = 'flex';
