@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Builders Invoice</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -3151,6 +3152,43 @@
     await sb.from('invoices').delete().eq('id', id);
   }
 
+
+  // ══════════════════════════════════
+  //  PDF GENERATION & UPLOAD
+  // ══════════════════════════════════
+  async function generatePdfBlob(htmlContent) {
+    // Create a hidden container, render HTML, convert to PDF blob
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:816px;';
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+
+    // Wait for fonts to load
+    await new Promise(r => setTimeout(r, 300));
+
+    const blob = await html2pdf().from(container).set({
+      margin: [0.4, 0.5, 0.4, 0.5],
+      filename: 'document.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    }).outputPdf('blob');
+
+    document.body.removeChild(container);
+    return blob;
+  }
+
+  async function uploadPdfToStorage(blob, filename) {
+    const path = currentUser.id + '/' + filename;
+    const { data, error } = await sb.storage.from('documents').upload(path, blob, {
+      contentType: 'application/pdf',
+      upsert: true
+    });
+    if (error) { console.error('Upload error:', error); return null; }
+    const { data: urlData } = sb.storage.from('documents').getPublicUrl(path);
+    return urlData.publicUrl;
+  }
+
   // ══════════════════════════════════
   //  OVERRIDE LOCAL FUNCTIONS → SUPABASE
   // ══════════════════════════════════
@@ -4053,34 +4091,108 @@
       return;
     }
 
-    // Grab values BEFORE saving
-    const quoteNum = document.getElementById('estimateNum').value || 'Quote';
-    const jobDesc = document.getElementById('jobDesc').value || '';
-    const total = document.getElementById('totalDisplay').textContent || '$0.00';
-    const bizName = document.getElementById('bizName').value || 'our company';
+    // Show loading state
+    const sendBtn = document.querySelector('.totals-send-btn');
+    const origText = sendBtn.textContent;
+    sendBtn.textContent = 'Generating PDF…';
+    sendBtn.disabled = true;
 
-    const subject = encodeURIComponent(`${quoteNum} from ${bizName}`);
-    const body = encodeURIComponent(
-      `Hi ${name},\n\n` +
-      `Please find your quote details below:\n\n` +
-      `Quote: ${quoteNum}\n` +
-      (jobDesc ? `Job: ${jobDesc}\n` : '') +
-      `Total: ${total}\n\n` +
-      `If you have any questions, feel free to reply to this email.\n\n` +
-      `Thank you,\n${bizName}`
-    );
+    try {
+      // Grab form values
+      const quoteNum = document.getElementById('estimateNum').value || 'Quote';
+      const jobDesc = document.getElementById('jobDesc').value || '';
+      const total = document.getElementById('totalDisplay').textContent || '$0.00';
+      const subtotal = document.getElementById('subtotalDisplay').textContent || '$0.00';
+      const bizName = document.getElementById('bizName').value || '';
+      const bizPhone = document.getElementById('bizPhone').value || '';
+      const bizEmail = document.getElementById('bizEmail').value || '';
+      const bizAddress = document.getElementById('bizAddress').value || '';
+      const clientPhone = document.getElementById('clientPhone').value || '';
+      const jobAddress = document.getElementById('jobAddress').value || '';
+      const estDate = document.getElementById('estimateDate').value || '';
+      const notes = document.getElementById('notes').value || '';
 
-    const mailto = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
-    window.location.href = mailto;
+      const fmtDate = (s) => s ? new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '';
 
-    // Save in background after mailto fires
-    setTimeout(async () => {
-      try { await saveQuote('Sent'); } catch(e) {}
-      showSuccessOverlay(() => {
-        showPage('dashboard');
-        showToast('Quote sent to ' + name);
+      // Build line items HTML
+      let itemsHtml = '';
+      document.querySelectorAll('#lineItemsBody .line-item-row').forEach(row => {
+        const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
+        if (!desc) return;
+        const unit = row.querySelector('.unit-select')?.value || '';
+        const inputs = row.querySelectorAll('input[type="number"]');
+        const qty = parseFloat(inputs[0]?.value) || 0;
+        const rate = parseFloat(inputs[1]?.value) || 0;
+        const amt = qty * rate;
+        itemsHtml += `<tr><td style="padding:8px 10px;border-bottom:1px solid #E0DBD4;font-size:13px;">${desc}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
       });
-    }, 500);
+
+      // Build PDF HTML content
+      const pdfHtml = `
+        <div style="font-family:sans-serif;color:#1C1C1E;padding:20px;">
+          <div style="display:flex;justify-content:space-between;border-bottom:2px solid #1C1C1E;padding-bottom:16px;margin-bottom:24px;">
+            <div><div style="font-size:20px;font-weight:800;">${bizName || 'Builders Invoice'}</div>
+            ${bizAddress ? `<div style="font-size:11px;color:#6B7280;">${bizAddress}</div>` : ''}
+            ${bizPhone || bizEmail ? `<div style="font-size:11px;color:#6B7280;">${[bizPhone,bizEmail].filter(Boolean).join(' · ')}</div>` : ''}</div>
+            <div style="text-align:right;"><div style="font-size:18px;font-weight:700;">${quoteNum}</div><div style="font-size:12px;color:#6B7280;">${fmtDate(estDate)}</div></div>
+          </div>
+          <div style="display:flex;gap:40px;margin-bottom:24px;">
+            <div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Prepared For</div><div style="font-weight:600;">${name}</div>${clientPhone ? `<div style="font-size:12px;color:#6B7280;">${clientPhone}</div>` : ''}${email ? `<div style="font-size:12px;color:#6B7280;">${email}</div>` : ''}</div>
+            ${jobAddress ? `<div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Job Site</div><div style="font-size:13px;">${jobAddress}</div></div>` : ''}
+          </div>
+          ${jobDesc ? `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Description</div><div style="font-size:13px;">${jobDesc}</div></div>` : ''}
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+            <thead><tr style="background:#EDEAE5;"><th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Description</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Unit</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Qty</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Rate</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Amount</th></tr></thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="width:200px;">
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span style="color:#6B7280;">Subtotal</span><span style="font-family:monospace;">${subtotal}</span></div>
+              <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;"><span style="font-weight:600;">Total</span><span style="font-size:22px;font-weight:800;">${total}</span></div>
+            </div>
+          </div>
+          ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;border-radius:6px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${notes}</div></div>` : ''}
+          <div style="margin-top:30px;padding-top:12px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;font-size:11px;color:#6B7280;"><span>${bizName || 'Builders Invoice'}</span><span>Thank you for your business.</span></div>
+        </div>`;
+
+      // Generate PDF blob and upload
+      sendBtn.textContent = 'Uploading PDF…';
+      const blob = await generatePdfBlob(pdfHtml);
+      const filename = `${quoteNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.pdf`;
+      const pdfUrl = await uploadPdfToStorage(blob, filename);
+
+      // Save quote
+      await saveQuote('Sent');
+
+      // Open mailto with PDF link
+      const subject = encodeURIComponent(`${quoteNum} from ${bizName || 'Builders Invoice'}`);
+      const emailBody = encodeURIComponent(
+        `Hi ${name},\n\n` +
+        `Please find your quote attached:\n\n` +
+        `Quote: ${quoteNum}\n` +
+        (jobDesc ? `Job: ${jobDesc}\n` : '') +
+        `Total: ${total}\n\n` +
+        (pdfUrl ? `📄 View/Download PDF:\n${pdfUrl}\n\n` : '') +
+        `If you have any questions, feel free to reply to this email.\n\n` +
+        `Thank you,\n${bizName || 'Builders Invoice'}`
+      );
+
+      window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${emailBody}`;
+
+      setTimeout(() => {
+        showSuccessOverlay(() => {
+          showPage('dashboard');
+          showToast('Quote sent to ' + name);
+        });
+      }, 500);
+
+    } catch(e) {
+      console.error('sendQuote error:', e);
+      showToast('Error sending — try again');
+    } finally {
+      sendBtn.textContent = origText;
+      sendBtn.disabled = false;
+    }
   }
 
   async function convertToInvoice() {
@@ -5045,35 +5157,110 @@
       return;
     }
 
-    // Grab values BEFORE saving (save navigates away)
-    const invNum = document.getElementById('invNum').value || 'Invoice';
-    const jobDesc = document.getElementById('invDesc').value || '';
-    const total = document.getElementById('invTotalDisplay').textContent || '$0.00';
-    const bizName = document.getElementById('invBizName').value || 'our company';
-    const dueIn = document.getElementById('invDueIn').value || '30';
-    const dueLabel = dueIn === '0' ? 'due on receipt' : `due within ${dueIn} days`;
+    // Show loading
+    const sendBtn = document.querySelector('#page-invoice-edit .totals-draft-btn');
+    const origText = sendBtn.textContent;
+    sendBtn.textContent = 'Generating PDF…';
+    sendBtn.disabled = true;
 
-    const subject = encodeURIComponent(`${invNum} from ${bizName}`);
-    const body = encodeURIComponent(
-      `Hi ${name},\n\n` +
-      `Please find your invoice details below:\n\n` +
-      `Invoice: ${invNum}\n` +
-      (jobDesc ? `Job: ${jobDesc}\n` : '') +
-      `Amount Due: ${total}\n` +
-      `Payment: ${dueLabel}\n\n` +
-      `If you have any questions, feel free to reply to this email.\n\n` +
-      `Thank you,\n${bizName}`
-    );
+    try {
+      const invNum = document.getElementById('invNum').value || 'Invoice';
+      const jobDesc = document.getElementById('invDesc').value || '';
+      const total = document.getElementById('invTotalDisplay').textContent || '$0.00';
+      const subtotal = document.getElementById('invSubtotal').textContent || '$0.00';
+      const bizName = document.getElementById('invBizName').value || '';
+      const bizPhone = document.getElementById('invBizPhone').value || '';
+      const bizEmail = document.getElementById('invBizEmail').value || '';
+      const bizAddress = document.getElementById('invBizAddress').value || '';
+      const clientPhone = document.getElementById('invClientPhone').value || '';
+      const jobAddress = document.getElementById('invJobAddress').value || '';
+      const invDate = document.getElementById('invDate').value || '';
+      const dueIn = document.getElementById('invDueIn').value || '30';
+      const notes = document.getElementById('invNotes').value || '';
+      const dueLabel = dueIn === '0' ? 'Due on receipt' : `Net ${dueIn}`;
 
-    // Open email first
-    const mailto = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
-    window.location.href = mailto;
+      const fmtDate = (s) => s ? new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '';
 
-    // Save in background after mailto fires
-    setTimeout(async () => {
-      try { await saveInvoiceAndReturn(); } catch(e) {}
-      showToast('Invoice email opened for ' + name);
-    }, 500);
+      let dueDate = '';
+      if (invDate) {
+        const d = new Date(invDate+'T00:00:00');
+        d.setDate(d.getDate() + parseInt(dueIn));
+        dueDate = fmtDate(d.toISOString().split('T')[0]);
+      }
+
+      let itemsHtml = '';
+      document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
+        const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
+        if (!desc) return;
+        const unit = row.querySelector('.unit-select')?.value || '';
+        const inputs = row.querySelectorAll('input[type="number"]');
+        const qty = parseFloat(inputs[0]?.value) || 0;
+        const rate = parseFloat(inputs[1]?.value) || 0;
+        const amt = qty * rate;
+        itemsHtml += `<tr><td style="padding:8px 10px;border-bottom:1px solid #E0DBD4;font-size:13px;">${desc}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
+      });
+
+      const pdfHtml = `
+        <div style="font-family:sans-serif;color:#1C1C1E;padding:20px;">
+          <div style="display:flex;justify-content:space-between;border-bottom:2px solid #1C1C1E;padding-bottom:16px;margin-bottom:24px;">
+            <div><div style="font-size:20px;font-weight:800;">${bizName || 'Builders Invoice'}</div>
+            ${bizAddress ? `<div style="font-size:11px;color:#6B7280;">${bizAddress}</div>` : ''}
+            ${bizPhone || bizEmail ? `<div style="font-size:11px;color:#6B7280;">${[bizPhone,bizEmail].filter(Boolean).join(' · ')}</div>` : ''}</div>
+            <div style="text-align:right;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#E07A2F;">INVOICE</div><div style="font-size:18px;font-weight:700;">${invNum}</div><div style="font-size:12px;color:#6B7280;">${fmtDate(invDate)}</div>${dueDate ? `<div style="font-size:11px;color:#C0392B;font-weight:600;">Due: ${dueDate}</div>` : ''}</div>
+          </div>
+          <div style="display:flex;gap:40px;margin-bottom:24px;">
+            <div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Bill To</div><div style="font-weight:600;">${name}</div>${clientPhone ? `<div style="font-size:12px;color:#6B7280;">${clientPhone}</div>` : ''}${email ? `<div style="font-size:12px;color:#6B7280;">${email}</div>` : ''}${jobAddress ? `<div style="font-size:12px;color:#6B7280;">${jobAddress}</div>` : ''}</div>
+          </div>
+          ${jobDesc ? `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Description</div><div style="font-size:13px;">${jobDesc}</div></div>` : ''}
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+            <thead><tr style="background:#EDEAE5;"><th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Description</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Unit</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Qty</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Rate</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Amount</th></tr></thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="width:200px;">
+              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span style="color:#6B7280;">Subtotal</span><span style="font-family:monospace;">${subtotal}</span></div>
+              <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;"><span style="font-weight:600;">Amount Due</span><span style="font-size:22px;font-weight:800;">${total}</span></div>
+            </div>
+          </div>
+          ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;border-radius:6px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${notes}</div></div>` : ''}
+          <div style="margin-top:30px;padding-top:12px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;font-size:11px;color:#6B7280;"><span>${bizName || 'Builders Invoice'}</span><span>Thank you for your business.</span></div>
+        </div>`;
+
+      sendBtn.textContent = 'Uploading PDF…';
+      const blob = await generatePdfBlob(pdfHtml);
+      const filename = `${invNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.pdf`;
+      const pdfUrl = await uploadPdfToStorage(blob, filename);
+
+      // Save invoice
+      await saveInvoiceAndReturn();
+
+      // Open mailto with PDF link
+      const subject = encodeURIComponent(`${invNum} from ${bizName || 'Builders Invoice'}`);
+      const emailBody = encodeURIComponent(
+        `Hi ${name},\n\n` +
+        `Please find your invoice attached:\n\n` +
+        `Invoice: ${invNum}\n` +
+        (jobDesc ? `Job: ${jobDesc}\n` : '') +
+        `Amount Due: ${total}\n` +
+        `Payment: ${dueLabel}\n\n` +
+        (pdfUrl ? `📄 View/Download PDF:\n${pdfUrl}\n\n` : '') +
+        `If you have any questions, feel free to reply to this email.\n\n` +
+        `Thank you,\n${bizName || 'Builders Invoice'}`
+      );
+
+      window.location.href = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${emailBody}`;
+
+      setTimeout(() => {
+        showToast('Invoice sent to ' + name);
+      }, 500);
+
+    } catch(e) {
+      console.error('sendInvoice error:', e);
+      showToast('Error sending — try again');
+    } finally {
+      sendBtn.textContent = origText;
+      sendBtn.disabled = false;
+    }
   }
 
   function generateInvPDF() {
