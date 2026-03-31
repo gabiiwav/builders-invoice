@@ -5638,9 +5638,16 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     }
   }
 
-  function finishOnboarding() {
+  async function finishOnboarding() {
+    const bizName = document.getElementById('obBizName').value.trim();
+    if (!bizName) {
+      document.getElementById('obBizName').style.borderColor = 'var(--red)';
+      setTimeout(() => document.getElementById('obBizName').style.borderColor = '', 2000);
+      return;
+    }
+
     const profile = {
-      biz_name: document.getElementById('obBizName').value.trim(),
+      biz_name: bizName,
       biz_phone: document.getElementById('obBizPhone').value.trim(),
       biz_email: document.getElementById('obBizEmail').value.trim(),
       biz_address: document.getElementById('obBizAddress').value.trim(),
@@ -5650,20 +5657,23 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       default_notes: document.getElementById('obNotes').value.trim(),
     };
 
-    // Save to Supabase in background
-    dbSaveProfile(profile).catch(e => console.warn('Profile save error:', e));
+    // Save to Supabase — wait for it
+    try {
+      await dbSaveProfile(profile);
+      console.log('Profile saved from onboarding:', profile.biz_name);
+    } catch(e) {
+      console.error('Profile save error:', e);
+    }
 
     // Hide onboarding, show app
     document.getElementById('onboardingPage').style.display = 'none';
     document.getElementById('appShell').style.display = '';
 
-    // Update nav
     const name = document.getElementById('obName').value.trim() || currentUser.email.split('@')[0];
     document.getElementById('navUserName').textContent = name;
     document.getElementById('navUserEmail').textContent = currentUser.email || '';
     document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
 
-    // Init grids and go
     try { initItemGrids(); } catch(e) {}
     try { initInvItemGrids(); } catch(e) {}
     Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
@@ -5687,16 +5697,31 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       }
 
       currentUser = session.user;
+      console.log('initApp: user =', currentUser.email);
 
+      // Try to fetch profile — if it fails, skip onboarding check and go to app
       let profile = null;
+      let profileFetched = false;
       try {
         profile = await Promise.race([
           dbGetProfile(),
-          new Promise(resolve => setTimeout(() => resolve(null), 5000))
+          new Promise(resolve => setTimeout(() => resolve('TIMEOUT'), 5000))
         ]);
-      } catch(e) { console.warn('Profile check error:', e); }
+        if (profile === 'TIMEOUT') {
+          console.warn('Profile fetch timed out — skipping onboarding check');
+          profile = null;
+          profileFetched = false;
+        } else {
+          profileFetched = true;
+          console.log('Profile loaded:', profile?.biz_name || '(no biz_name)');
+        }
+      } catch(e) {
+        console.warn('Profile check error:', e);
+        profileFetched = false;
+      }
 
-      if (!profile || !profile.biz_name) {
+      // Only show onboarding if we successfully fetched the profile AND it has no biz_name
+      if (profileFetched && profile && !profile.biz_name) {
         showOnboarding();
         return;
       }
