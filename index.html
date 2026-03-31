@@ -1664,21 +1664,66 @@
   <div class="auth-card">
     <div class="auth-logo">Builders<span>Invoice</span></div>
     <div class="auth-subtitle">Quotes & invoices for the trades.</div>
-    <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuthTab('login')">Log In</button>
-      <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+
+    <!-- Login / Signup Form -->
+    <div id="authMainView">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Log In</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+      </div>
+      <div class="auth-error" id="authError"></div>
+      <div id="authForm">
+        <div class="auth-field"><label>Email</label><input type="email" id="authEmail" placeholder="you@email.com" onkeydown="if(event.key==='Enter')handleAuth()"></div>
+        <div class="auth-field"><label>Password</label><input type="password" id="authPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleAuth()"></div>
+        <div class="auth-field" id="authNameField" style="display:none;"><label>Full Name</label><input type="text" id="authName" placeholder="Doug Builder"></div>
+        <button class="auth-btn auth-btn-primary" id="authSubmitBtn" onclick="handleAuth()">Log In</button>
+        <div id="forgotLink" style="text-align:center;margin-top:8px;">
+          <a href="#" onclick="showForgotPassword();return false" style="font-size:12px;color:var(--amber);text-decoration:none;font-weight:500;">Forgot password?</a>
+        </div>
+        <div class="auth-divider">or</div>
+        <button class="auth-btn-google" onclick="handleGoogleAuth()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+      </div>
     </div>
-    <div class="auth-error" id="authError"></div>
-    <div id="authForm">
-      <div class="auth-field"><label>Email</label><input type="email" id="authEmail" placeholder="you@email.com" onkeydown="if(event.key==='Enter')handleAuth()"></div>
-      <div class="auth-field"><label>Password</label><input type="password" id="authPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleAuth()"></div>
-      <div class="auth-field" id="authNameField" style="display:none;"><label>Full Name</label><input type="text" id="authName" placeholder="Doug Builder"></div>
-      <button class="auth-btn auth-btn-primary" id="authSubmitBtn" onclick="handleAuth()">Log In</button>
-      <div class="auth-divider">or</div>
-      <button class="auth-btn-google" onclick="handleGoogleAuth()">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-        Continue with Google
-      </button>
+
+    <!-- Email Confirmation Success -->
+    <div id="authConfirmView" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:48px;margin-bottom:16px;">📧</div>
+      <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px;">Check your email</h3>
+      <p style="font-size:14px;color:var(--gray);margin-bottom:6px;">We sent a confirmation link to:</p>
+      <p style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:20px;" id="confirmEmailAddr"></p>
+      <p style="font-size:13px;color:var(--gray);margin-bottom:24px;">Click the link in the email to activate your account, then come back and log in.</p>
+      <button class="auth-btn" style="background:var(--canvas);color:var(--ink);margin-bottom:10px;" onclick="resendConfirmation()">Resend confirmation email</button>
+      <div style="font-size:12px;color:var(--gray);" id="resendStatus"></div>
+      <div style="margin-top:16px;">
+        <a href="#" onclick="backToLogin();return false" style="font-size:13px;color:var(--amber);text-decoration:none;font-weight:500;">← Back to log in</a>
+      </div>
+    </div>
+
+    <!-- Forgot Password -->
+    <div id="authForgotView" style="display:none;">
+      <div style="font-size:48px;text-align:center;margin-bottom:16px;">🔑</div>
+      <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">Reset password</h3>
+      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:20px;">Enter your email and we'll send you a reset link.</p>
+      <div class="auth-error" id="forgotError"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="forgotEmail" placeholder="you@email.com" onkeydown="if(event.key==='Enter')sendResetEmail()"></div>
+      <button class="auth-btn auth-btn-primary" id="forgotSubmitBtn" onclick="sendResetEmail()">Send Reset Link</button>
+      <div style="text-align:center;margin-top:12px;">
+        <a href="#" onclick="backToLogin();return false" style="font-size:13px;color:var(--amber);text-decoration:none;font-weight:500;">← Back to log in</a>
+      </div>
+    </div>
+
+    <!-- Reset Password (after clicking email link) -->
+    <div id="authResetView" style="display:none;">
+      <div style="font-size:48px;text-align:center;margin-bottom:16px;">🔐</div>
+      <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">New password</h3>
+      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:20px;">Choose a new password for your account.</p>
+      <div class="auth-error" id="resetError"></div>
+      <div class="auth-field"><label>New Password</label><input type="password" id="resetPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitNewPassword()"></div>
+      <div class="auth-field"><label>Confirm Password</label><input type="password" id="resetPasswordConfirm" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitNewPassword()"></div>
+      <button class="auth-btn auth-btn-primary" id="resetSubmitBtn" onclick="submitNewPassword()">Update Password</button>
     </div>
   </div>
 </div>
@@ -2583,6 +2628,7 @@
                 <span class="totals-grand-value" id="invTotalDisplay">$0.00</span>
               </div>
               <button class="totals-send-btn" onclick="saveInvoiceAndReturn()">Save Invoice</button>
+              <button class="totals-draft-btn" onclick="sendInvoice()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);">Send Invoice ✉</button>
               <button class="totals-draft-btn" onclick="markInvPaid()" id="invMarkPaidBtn">Mark as Paid ✓</button>
               <button class="totals-pdf-btn" onclick="generateInvPDF()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -2705,6 +2751,7 @@
     document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&mode==='login')||(i===1&&mode==='signup')));
     document.getElementById('authNameField').style.display = mode === 'signup' ? '' : 'none';
     document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Log In' : 'Sign Up';
+    document.getElementById('forgotLink').style.display = mode === 'login' ? '' : 'none';
     document.getElementById('authError').style.display = 'none';
   }
 
@@ -2753,12 +2800,10 @@
           btn.textContent = 'Success! Loading…';
           showOnboarding();
         } else if (result.data.user && !result.data.session) {
-          // Needs email confirmation
-          const errEl = document.getElementById('authError');
-          errEl.style.display = '';
-          errEl.style.background = 'var(--green-pale)';
-          errEl.style.color = 'var(--green)';
-          errEl.textContent = '✓ Account created! Check your email to confirm, then log in.';
+          // Needs email confirmation — show confirmation screen
+          document.getElementById('confirmEmailAddr').textContent = email;
+          document.getElementById('authMainView').style.display = 'none';
+          document.getElementById('authConfirmView').style.display = '';
           btn.disabled = false; btn.textContent = 'Sign Up';
         } else {
           showAuthError('This email may already be registered. Try logging in instead.');
@@ -2783,6 +2828,133 @@
     const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname } });
     if (error) showAuthError(error.message);
   }
+
+  // ── Forgot Password ──
+  function showForgotPassword() {
+    document.getElementById('authMainView').style.display = 'none';
+    document.getElementById('authConfirmView').style.display = 'none';
+    document.getElementById('authResetView').style.display = 'none';
+    document.getElementById('authForgotView').style.display = '';
+    document.getElementById('forgotEmail').value = document.getElementById('authEmail').value || '';
+    document.getElementById('forgotError').style.display = 'none';
+  }
+
+  function backToLogin() {
+    document.getElementById('authMainView').style.display = '';
+    document.getElementById('authConfirmView').style.display = 'none';
+    document.getElementById('authForgotView').style.display = 'none';
+    document.getElementById('authResetView').style.display = 'none';
+    switchAuthTab('login');
+  }
+
+  async function sendResetEmail() {
+    const email = document.getElementById('forgotEmail').value.trim();
+    if (!email) {
+      document.getElementById('forgotError').style.display = '';
+      document.getElementById('forgotError').textContent = 'Please enter your email.';
+      return;
+    }
+
+    const btn = document.getElementById('forgotSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+
+    try {
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+
+      if (error) {
+        document.getElementById('forgotError').style.display = '';
+        document.getElementById('forgotError').textContent = error.message;
+        btn.disabled = false; btn.textContent = 'Send Reset Link';
+        return;
+      }
+
+      // Show success
+      const errEl = document.getElementById('forgotError');
+      errEl.style.display = '';
+      errEl.style.background = 'var(--green-pale)';
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = '✓ Reset link sent! Check your email.';
+      btn.disabled = false; btn.textContent = 'Send Reset Link';
+    } catch(e) {
+      document.getElementById('forgotError').style.display = '';
+      document.getElementById('forgotError').textContent = e.message || 'Something went wrong.';
+      btn.disabled = false; btn.textContent = 'Send Reset Link';
+    }
+  }
+
+  // ── Resend Confirmation ──
+  async function resendConfirmation() {
+    const email = document.getElementById('confirmEmailAddr').textContent;
+    if (!email) return;
+
+    document.getElementById('resendStatus').textContent = 'Sending…';
+    try {
+      const { error } = await sb.auth.resend({ type: 'signup', email });
+      if (error) {
+        document.getElementById('resendStatus').textContent = error.message;
+      } else {
+        document.getElementById('resendStatus').textContent = '✓ Confirmation email resent!';
+      }
+    } catch(e) {
+      document.getElementById('resendStatus').textContent = e.message || 'Failed to resend.';
+    }
+    setTimeout(() => document.getElementById('resendStatus').textContent = '', 5000);
+  }
+
+  // ── Reset Password (from email link) ──
+  async function submitNewPassword() {
+    const pw = document.getElementById('resetPassword').value;
+    const pw2 = document.getElementById('resetPasswordConfirm').value;
+    const errEl = document.getElementById('resetError');
+
+    if (!pw || pw.length < 6) {
+      errEl.style.display = ''; errEl.textContent = 'Password must be at least 6 characters.';
+      return;
+    }
+    if (pw !== pw2) {
+      errEl.style.display = ''; errEl.textContent = 'Passwords do not match.';
+      return;
+    }
+
+    const btn = document.getElementById('resetSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Updating…';
+
+    try {
+      const { error } = await sb.auth.updateUser({ password: pw });
+      if (error) {
+        errEl.style.display = ''; errEl.textContent = error.message;
+        btn.disabled = false; btn.textContent = 'Update Password';
+        return;
+      }
+
+      errEl.style.display = '';
+      errEl.style.background = 'var(--green-pale)';
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = '✓ Password updated! Redirecting…';
+      setTimeout(() => {
+        window.location.hash = '';
+        window.location.reload();
+      }, 1500);
+    } catch(e) {
+      errEl.style.display = ''; errEl.textContent = e.message || 'Something went wrong.';
+      btn.disabled = false; btn.textContent = 'Update Password';
+    }
+  }
+
+  // ── Check for password recovery token in URL ──
+  function checkForRecoveryToken() {
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      // User clicked a password reset link — show reset form
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('authPage').style.display = 'flex';
+      document.getElementById('authMainView').style.display = 'none';
+      document.getElementById('authResetView').style.display = '';
+    }
+  }
+  checkForRecoveryToken();
 
   async function handleLogout() {
     await sb.auth.signOut();
@@ -3873,6 +4045,7 @@
 
   async function sendQuote() {
     const name = document.getElementById('clientName').value.trim();
+    const email = document.getElementById('clientEmail').value.trim();
     if (!name) {
       document.getElementById('clientName').style.borderColor = 'var(--red)';
       document.getElementById('clientName').focus();
@@ -3880,6 +4053,27 @@
       return;
     }
     await saveQuote('Sent');
+
+    // Build mailto
+    const quoteNum = document.getElementById('estimateNum').value || 'Quote';
+    const jobDesc = document.getElementById('jobDesc').value || '';
+    const total = document.getElementById('totalDisplay').textContent || '$0.00';
+    const bizName = document.getElementById('bizName').value || 'our company';
+
+    const subject = encodeURIComponent(`${quoteNum} from ${bizName}`);
+    const body = encodeURIComponent(
+      `Hi ${name},\n\n` +
+      `Please find your quote details below:\n\n` +
+      `Quote: ${quoteNum}\n` +
+      (jobDesc ? `Job: ${jobDesc}\n` : '') +
+      `Total: ${total}\n\n` +
+      `If you have any questions, feel free to reply to this email.\n\n` +
+      `Thank you,\n${bizName}`
+    );
+
+    const mailto = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+    window.open(mailto, '_self');
+
     showSuccessOverlay(() => {
       showPage('dashboard');
       showToast('Quote sent to ' + name);
@@ -4838,6 +5032,44 @@
     document.getElementById('invMarkPaidBtn').textContent = newStatus === 'Paid' ? '✓ Paid' : 'Mark as Paid ✓';
   }
 
+  async function sendInvoice() {
+    const name = document.getElementById('invClientName').value.trim();
+    const email = document.getElementById('invClientEmail').value.trim();
+    if (!name) {
+      document.getElementById('invClientName').style.borderColor = 'var(--red)';
+      document.getElementById('invClientName').focus();
+      setTimeout(() => { document.getElementById('invClientName').style.borderColor = ''; }, 2000);
+      return;
+    }
+
+    await saveInvoiceAndReturn();
+
+    const invNum = document.getElementById('invNum').value || 'Invoice';
+    const jobDesc = document.getElementById('invDesc').value || '';
+    const total = document.getElementById('invTotalDisplay').textContent || '$0.00';
+    const bizName = document.getElementById('invBizName').value || 'our company';
+    const dueIn = document.getElementById('invDueIn').value || '30';
+
+    const dueLabel = dueIn === '0' ? 'due on receipt' : `due within ${dueIn} days`;
+
+    const subject = encodeURIComponent(`${invNum} from ${bizName}`);
+    const body = encodeURIComponent(
+      `Hi ${name},\n\n` +
+      `Please find your invoice details below:\n\n` +
+      `Invoice: ${invNum}\n` +
+      (jobDesc ? `Job: ${jobDesc}\n` : '') +
+      `Amount Due: ${total}\n` +
+      `Payment: ${dueLabel}\n\n` +
+      `If you have any questions, feel free to reply to this email.\n\n` +
+      `Thank you,\n${bizName}`
+    );
+
+    const mailto = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+    window.open(mailto, '_self');
+
+    showToast('Invoice email opened for ' + name);
+  }
+
   function generateInvPDF() {
     const clientName = document.getElementById('invClientName').value || 'Client';
     const clientPhone = document.getElementById('invClientPhone').value || '';
@@ -5239,52 +5471,51 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   let appInitialized = false;
 
   async function initApp(session) {
-    if (!session || !session.user) {
-      currentUser = null;
-      document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('appShell').style.display = 'none';
-      document.getElementById('onboardingPage').style.display = 'none';
-      document.getElementById('authPage').style.display = 'flex';
-      return;
-    }
-
-    currentUser = session.user;
-
-    // Check if user has completed onboarding (has biz_name)
-    // Timeout after 5s to prevent hanging
-    let profile = null;
     try {
-      profile = await Promise.race([
-        dbGetProfile(),
-        new Promise(resolve => setTimeout(() => resolve(null), 5000))
-      ]);
+      if (!session || !session.user) {
+        currentUser = null;
+        document.getElementById('appShell').style.display = 'none';
+        document.getElementById('onboardingPage').style.display = 'none';
+        document.getElementById('authPage').style.display = 'flex';
+        return;
+      }
+
+      currentUser = session.user;
+
+      let profile = null;
+      try {
+        profile = await Promise.race([
+          dbGetProfile(),
+          new Promise(resolve => setTimeout(() => resolve(null), 5000))
+        ]);
+      } catch(e) { console.warn('Profile check error:', e); }
+
       if (!profile || !profile.biz_name) {
         showOnboarding();
         return;
       }
+
+      const email = currentUser.email || '';
+      const name = currentUser.user_metadata?.full_name || email.split('@')[0];
+      document.getElementById('navUserName').textContent = name;
+      document.getElementById('navUserEmail').textContent = email;
+      document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
+
+      document.getElementById('authPage').style.display = 'none';
+      document.getElementById('onboardingPage').style.display = 'none';
+      document.getElementById('appShell').style.display = '';
+
+      try { initItemGrids(); } catch(e) {}
+      try { initInvItemGrids(); } catch(e) {}
+      Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
+      newQuote();
+      appInitialized = true;
     } catch(e) {
-      console.warn('Profile check error:', e);
+      console.error('initApp fatal:', e);
+      document.getElementById('authPage').style.display = 'flex';
+    } finally {
+      document.getElementById('loadingScreen').style.display = 'none';
     }
-
-    // Existing user — go straight to app
-    document.getElementById('loadingScreen').style.display = 'none';
-    const email = currentUser.email || '';
-    const name = currentUser.user_metadata?.full_name || email.split('@')[0];
-    document.getElementById('navUserName').textContent = name;
-    document.getElementById('navUserEmail').textContent = email;
-    document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
-
-    document.getElementById('authPage').style.display = 'none';
-    document.getElementById('onboardingPage').style.display = 'none';
-    document.getElementById('appShell').style.display = '';
-
-    try { initItemGrids(); } catch(e) {}
-    try { initInvItemGrids(); } catch(e) {}
-
-    Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => console.warn('Data preload error:', e));
-
-    newQuote();
-    appInitialized = true;
   }
 
   let initInProgress = false;
@@ -5311,6 +5542,17 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       initInProgress = true;
       await initApp(session);
       initInProgress = false;
+    } else if (event === 'PASSWORD_RECOVERY') {
+      // User clicked password reset link in email
+      currentUser = session.user;
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('appShell').style.display = 'none';
+      document.getElementById('onboardingPage').style.display = 'none';
+      document.getElementById('authPage').style.display = 'flex';
+      document.getElementById('authMainView').style.display = 'none';
+      document.getElementById('authConfirmView').style.display = 'none';
+      document.getElementById('authForgotView').style.display = 'none';
+      document.getElementById('authResetView').style.display = '';
     } else if (event === 'SIGNED_OUT') {
       appInitialized = false;
       initInProgress = false;
