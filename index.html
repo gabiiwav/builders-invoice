@@ -3161,28 +3161,39 @@
       console.error('html2pdf library not loaded!');
       return null;
     }
+
+    // Show a loading overlay so user doesn't see the render
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(245,242,238,0.95);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:15px;color:var(--ink);font-weight:600;';
+    overlay.textContent = 'Generating PDF…';
+    document.body.appendChild(overlay);
+
+    // Container must be visible and on-screen for html2canvas
     const container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:816px;';
+    container.style.cssText = 'position:absolute;top:0;left:0;width:816px;background:white;z-index:99997;';
     container.innerHTML = htmlContent;
     document.body.appendChild(container);
 
-    await new Promise(r => setTimeout(r, 500));
+    // Wait for full render
+    await new Promise(r => setTimeout(r, 800));
 
     try {
-      const blob = await html2pdf().from(container).set({
-        margin: [0.4, 0.5, 0.4, 0.5],
-        filename: 'document.pdf',
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      const opt = {
+        margin: [0.3, 0.4, 0.3, 0.4],
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: 816 },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      }).outputPdf('blob');
+      };
 
-      console.log('PDF blob generated:', blob, 'size:', blob?.size);
+      const blob = await html2pdf().set(opt).from(container).toPdf().output('blob');
+      console.log('PDF blob generated, size:', blob?.size);
       document.body.removeChild(container);
+      document.body.removeChild(overlay);
       return blob;
     } catch(e) {
       console.error('PDF generation error:', e);
-      document.body.removeChild(container);
+      try { document.body.removeChild(container); } catch(x) {}
+      try { document.body.removeChild(overlay); } catch(x) {}
       return null;
     }
   }
@@ -4140,32 +4151,31 @@
         itemsHtml += `<tr><td style="padding:8px 10px;border-bottom:1px solid #E0DBD4;font-size:13px;">${desc}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
       });
 
-      // Build PDF HTML content
+      // Build PDF HTML content (table-based for html2canvas)
       const pdfHtml = `
-        <div style="font-family:sans-serif;color:#1C1C1E;padding:20px;">
-          <div style="display:flex;justify-content:space-between;border-bottom:2px solid #1C1C1E;padding-bottom:16px;margin-bottom:24px;">
-            <div><div style="font-size:20px;font-weight:800;">${bizName || 'Builders Invoice'}</div>
+        <div style="font-family:Arial,sans-serif;color:#1C1C1E;padding:24px;width:780px;">
+          <table style="width:100%;margin-bottom:24px;"><tr>
+            <td style="vertical-align:top;"><div style="font-size:20px;font-weight:800;">${bizName || 'Builders Invoice'}</div>
             ${bizAddress ? `<div style="font-size:11px;color:#6B7280;">${bizAddress}</div>` : ''}
-            ${bizPhone || bizEmail ? `<div style="font-size:11px;color:#6B7280;">${[bizPhone,bizEmail].filter(Boolean).join(' · ')}</div>` : ''}</div>
-            <div style="text-align:right;"><div style="font-size:18px;font-weight:700;">${quoteNum}</div><div style="font-size:12px;color:#6B7280;">${fmtDate(estDate)}</div></div>
-          </div>
-          <div style="display:flex;gap:40px;margin-bottom:24px;">
-            <div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Prepared For</div><div style="font-weight:600;">${name}</div>${clientPhone ? `<div style="font-size:12px;color:#6B7280;">${clientPhone}</div>` : ''}${email ? `<div style="font-size:12px;color:#6B7280;">${email}</div>` : ''}</div>
-            ${jobAddress ? `<div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Job Site</div><div style="font-size:13px;">${jobAddress}</div></div>` : ''}
-          </div>
-          ${jobDesc ? `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Description</div><div style="font-size:13px;">${jobDesc}</div></div>` : ''}
+            ${bizPhone || bizEmail ? `<div style="font-size:11px;color:#6B7280;">${[bizPhone,bizEmail].filter(Boolean).join(' | ')}</div>` : ''}</td>
+            <td style="vertical-align:top;text-align:right;"><div style="font-size:18px;font-weight:700;">${quoteNum}</div><div style="font-size:12px;color:#6B7280;">${fmtDate(estDate)}</div></td>
+          </tr></table>
+          <hr style="border:none;border-top:2px solid #1C1C1E;margin-bottom:24px;">
+          <table style="width:100%;margin-bottom:24px;"><tr>
+            <td style="vertical-align:top;width:50%;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Prepared For</div><div style="font-weight:600;">${name}</div>${clientPhone ? `<div style="font-size:12px;color:#6B7280;">${clientPhone}</div>` : ''}${email ? `<div style="font-size:12px;color:#6B7280;">${email}</div>` : ''}</td>
+            ${jobAddress ? `<td style="vertical-align:top;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Job Site</div><div style="font-size:13px;">${jobAddress}</div></td>` : ''}
+          </tr></table>
+          ${jobDesc ? `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Description</div><div style="font-size:13px;">${jobDesc}</div></div>` : ''}
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-            <thead><tr style="background:#EDEAE5;"><th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Description</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Unit</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Qty</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Rate</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Amount</th></tr></thead>
-            <tbody>${itemsHtml}</tbody>
+            <tr style="background:#EDEAE5;"><th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;">Description</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:700;color:#6B7280;">Unit</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:700;color:#6B7280;">Qty</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:700;color:#6B7280;">Rate</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:700;color:#6B7280;">Amount</th></tr>
+            ${itemsHtml}
           </table>
-          <div style="display:flex;justify-content:flex-end;">
-            <div style="width:200px;">
-              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span style="color:#6B7280;">Subtotal</span><span style="font-family:monospace;">${subtotal}</span></div>
-              <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;"><span style="font-weight:600;">Total</span><span style="font-size:22px;font-weight:800;">${total}</span></div>
-            </div>
-          </div>
-          ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;border-radius:6px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${notes}</div></div>` : ''}
-          <div style="margin-top:30px;padding-top:12px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;font-size:11px;color:#6B7280;"><span>${bizName || 'Builders Invoice'}</span><span>Thank you for your business.</span></div>
+          <table style="width:100%;margin-bottom:20px;"><tr><td></td><td style="width:220px;vertical-align:top;">
+            <table style="width:100%;"><tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Subtotal</td><td style="padding:4px 0;text-align:right;font-family:monospace;font-size:13px;">${subtotal}</td></tr></table>
+            <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;"><table style="width:100%;"><tr><td style="font-weight:700;">Total</td><td style="text-align:right;font-size:22px;font-weight:800;">${total}</td></tr></table></div>
+          </td></tr></table>
+          ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${notes}</div></div>` : ''}
+          <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${bizName || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
         </div>`;
 
       // Generate PDF blob and upload
@@ -5214,29 +5224,28 @@
       });
 
       const pdfHtml = `
-        <div style="font-family:sans-serif;color:#1C1C1E;padding:20px;">
-          <div style="display:flex;justify-content:space-between;border-bottom:2px solid #1C1C1E;padding-bottom:16px;margin-bottom:24px;">
-            <div><div style="font-size:20px;font-weight:800;">${bizName || 'Builders Invoice'}</div>
+        <div style="font-family:Arial,sans-serif;color:#1C1C1E;padding:24px;width:780px;">
+          <table style="width:100%;margin-bottom:24px;"><tr>
+            <td style="vertical-align:top;"><div style="font-size:20px;font-weight:800;">${bizName || 'Builders Invoice'}</div>
             ${bizAddress ? `<div style="font-size:11px;color:#6B7280;">${bizAddress}</div>` : ''}
-            ${bizPhone || bizEmail ? `<div style="font-size:11px;color:#6B7280;">${[bizPhone,bizEmail].filter(Boolean).join(' · ')}</div>` : ''}</div>
-            <div style="text-align:right;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#E07A2F;">INVOICE</div><div style="font-size:18px;font-weight:700;">${invNum}</div><div style="font-size:12px;color:#6B7280;">${fmtDate(invDate)}</div>${dueDate ? `<div style="font-size:11px;color:#C0392B;font-weight:600;">Due: ${dueDate}</div>` : ''}</div>
-          </div>
-          <div style="display:flex;gap:40px;margin-bottom:24px;">
-            <div><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Bill To</div><div style="font-weight:600;">${name}</div>${clientPhone ? `<div style="font-size:12px;color:#6B7280;">${clientPhone}</div>` : ''}${email ? `<div style="font-size:12px;color:#6B7280;">${email}</div>` : ''}${jobAddress ? `<div style="font-size:12px;color:#6B7280;">${jobAddress}</div>` : ''}</div>
-          </div>
-          ${jobDesc ? `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Description</div><div style="font-size:13px;">${jobDesc}</div></div>` : ''}
+            ${bizPhone || bizEmail ? `<div style="font-size:11px;color:#6B7280;">${[bizPhone,bizEmail].filter(Boolean).join(' | ')}</div>` : ''}</td>
+            <td style="vertical-align:top;text-align:right;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#E07A2F;">INVOICE</div><div style="font-size:18px;font-weight:700;">${invNum}</div><div style="font-size:12px;color:#6B7280;">${fmtDate(invDate)}</div>${dueDate ? `<div style="font-size:11px;color:#C0392B;font-weight:600;">Due: ${dueDate}</div>` : ''}</td>
+          </tr></table>
+          <hr style="border:none;border-top:2px solid #1C1C1E;margin-bottom:24px;">
+          <table style="width:100%;margin-bottom:24px;"><tr>
+            <td style="vertical-align:top;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Bill To</div><div style="font-weight:600;">${name}</div>${clientPhone ? `<div style="font-size:12px;color:#6B7280;">${clientPhone}</div>` : ''}${email ? `<div style="font-size:12px;color:#6B7280;">${email}</div>` : ''}${jobAddress ? `<div style="font-size:12px;color:#6B7280;">${jobAddress}</div>` : ''}</td>
+          </tr></table>
+          ${jobDesc ? `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:6px;">Description</div><div style="font-size:13px;">${jobDesc}</div></div>` : ''}
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-            <thead><tr style="background:#EDEAE5;"><th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Description</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Unit</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Qty</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Rate</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;">Amount</th></tr></thead>
-            <tbody>${itemsHtml}</tbody>
+            <tr style="background:#EDEAE5;"><th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;">Description</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:700;color:#6B7280;">Unit</th><th style="padding:6px;text-align:center;font-size:10px;font-weight:700;color:#6B7280;">Qty</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:700;color:#6B7280;">Rate</th><th style="padding:6px;text-align:right;font-size:10px;font-weight:700;color:#6B7280;">Amount</th></tr>
+            ${itemsHtml}
           </table>
-          <div style="display:flex;justify-content:flex-end;">
-            <div style="width:200px;">
-              <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span style="color:#6B7280;">Subtotal</span><span style="font-family:monospace;">${subtotal}</span></div>
-              <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;display:flex;justify-content:space-between;"><span style="font-weight:600;">Amount Due</span><span style="font-size:22px;font-weight:800;">${total}</span></div>
-            </div>
-          </div>
-          ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;border-radius:6px;"><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${notes}</div></div>` : ''}
-          <div style="margin-top:30px;padding-top:12px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;font-size:11px;color:#6B7280;"><span>${bizName || 'Builders Invoice'}</span><span>Thank you for your business.</span></div>
+          <table style="width:100%;margin-bottom:20px;"><tr><td></td><td style="width:220px;vertical-align:top;">
+            <table style="width:100%;"><tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Subtotal</td><td style="padding:4px 0;text-align:right;font-family:monospace;font-size:13px;">${subtotal}</td></tr></table>
+            <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;"><table style="width:100%;"><tr><td style="font-weight:700;">Amount Due</td><td style="text-align:right;font-size:22px;font-weight:800;">${total}</td></tr></table></div>
+          </td></tr></table>
+          ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${notes}</div></div>` : ''}
+          <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${bizName || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
         </div>`;
 
       sendBtn.textContent = 'Uploading PDF…';
