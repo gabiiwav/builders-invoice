@@ -2744,46 +2744,46 @@
   // ══════════════════════════════════
   //  SHARED DOCUMENT VIEWER
   // ══════════════════════════════════
-  (async function checkForSharedDoc() {
-    const params = new URLSearchParams(window.location.search);
-    const docId = params.get('doc');
-    if (!docId) return;
-
-    // Hide everything
+  // Check synchronously FIRST so auth listener doesn't interfere
+  const __docId = new URLSearchParams(window.location.search).get('doc');
+  if (__docId) {
+    window.__isDocViewer = true;
+    // Hide everything immediately
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('authPage').style.display = 'none';
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('onboardingPage').style.display = 'none';
+    document.body.style.background = '#fff';
 
     // Create viewer
     const viewer = document.createElement('div');
     viewer.id = 'docViewer';
-    viewer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:var(--font-body);color:var(--gray);">Loading document…</div>';
+    viewer.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;overflow-y:auto;';
+    viewer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#6B7280;">Loading document…</div>';
     document.body.appendChild(viewer);
 
-    try {
-      const { data, error } = await sb.from('shared_documents').select('html_content, doc_type').eq('id', docId).single();
-      if (error || !data) {
-        viewer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:var(--font-body);"><div style="font-size:48px;margin-bottom:16px;">📄</div><div style="font-size:18px;font-weight:600;color:var(--ink);">Document not found</div><div style="font-size:14px;color:var(--gray);margin-top:8px;">This link may have expired or been removed.</div></div>';
-        return;
+    // Fetch document async
+    (async () => {
+      try {
+        const { data, error } = await sb.from('shared_documents').select('html_content, doc_type').eq('id', __docId).single();
+        if (error || !data) {
+          viewer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:16px;">📄</div><div style="font-size:18px;font-weight:600;color:#1C1C1E;">Document not found</div><div style="font-size:14px;color:#6B7280;margin-top:8px;">This link may have expired or been removed.</div></div>';
+          return;
+        }
+        const docType = data.doc_type === 'invoice' ? 'Invoice' : 'Quote';
+        viewer.innerHTML = `
+          <div class="no-print" style="background:#1C1C1E;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;">
+            <span style="font-family:'Plus Jakarta Sans',sans-serif;color:white;font-size:14px;font-weight:600;">Builders<span style="color:#E07A2F;">Invoice</span> <span style="color:rgba(255,255,255,0.4);font-weight:400;margin-left:8px;">${docType}</span></span>
+            <button onclick="window.print()" style="padding:8px 20px;background:#E07A2F;color:white;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Save as PDF</button>
+          </div>
+          <div style="max-width:900px;margin:0 auto;background:white;min-height:calc(100vh - 48px);">${data.html_content}</div>
+        `;
+      } catch(e) {
+        console.error('Doc fetch error:', e);
+        viewer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#C0392B;">Error loading document.</div>';
       }
-
-      const docType = data.doc_type === 'invoice' ? 'Invoice' : 'Quote';
-      viewer.innerHTML = `
-        <div class="no-print" style="background:#1C1C1E;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;">
-          <span style="font-family:'Plus Jakarta Sans',sans-serif;color:white;font-size:14px;font-weight:600;">Builders<span style="color:#E07A2F;">Invoice</span> <span style="color:rgba(255,255,255,0.4);font-weight:400;margin-left:8px;">${docType}</span></span>
-          <button onclick="window.print()" style="padding:8px 20px;background:#E07A2F;color:white;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Save as PDF</button>
-        </div>
-        <div style="max-width:900px;margin:0 auto;background:white;min-height:calc(100vh - 48px);">${data.html_content}</div>
-      `;
-    } catch(e) {
-      console.error('Doc fetch error:', e);
-      viewer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:var(--font-body);color:var(--red);">Error loading document.</div>';
-    }
-
-    // Stop the rest of the app from initializing
-    window.__isDocViewer = true;
-  })();
+    })();
+  }
 
   // ══════════════════════════════════
   //  AUTH
