@@ -4052,9 +4052,8 @@
       setTimeout(() => { document.getElementById('clientName').style.borderColor = ''; }, 2000);
       return;
     }
-    await saveQuote('Sent');
 
-    // Build mailto
+    // Grab values BEFORE saving
     const quoteNum = document.getElementById('estimateNum').value || 'Quote';
     const jobDesc = document.getElementById('jobDesc').value || '';
     const total = document.getElementById('totalDisplay').textContent || '$0.00';
@@ -4072,12 +4071,16 @@
     );
 
     const mailto = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
-    window.open(mailto, '_self');
+    window.location.href = mailto;
 
-    showSuccessOverlay(() => {
-      showPage('dashboard');
-      showToast('Quote sent to ' + name);
-    });
+    // Save in background after mailto fires
+    setTimeout(async () => {
+      try { await saveQuote('Sent'); } catch(e) {}
+      showSuccessOverlay(() => {
+        showPage('dashboard');
+        showToast('Quote sent to ' + name);
+      });
+    }, 500);
   }
 
   async function convertToInvoice() {
@@ -5042,14 +5045,12 @@
       return;
     }
 
-    await saveInvoiceAndReturn();
-
+    // Grab values BEFORE saving (save navigates away)
     const invNum = document.getElementById('invNum').value || 'Invoice';
     const jobDesc = document.getElementById('invDesc').value || '';
     const total = document.getElementById('invTotalDisplay').textContent || '$0.00';
     const bizName = document.getElementById('invBizName').value || 'our company';
     const dueIn = document.getElementById('invDueIn').value || '30';
-
     const dueLabel = dueIn === '0' ? 'due on receipt' : `due within ${dueIn} days`;
 
     const subject = encodeURIComponent(`${invNum} from ${bizName}`);
@@ -5064,10 +5065,15 @@
       `Thank you,\n${bizName}`
     );
 
+    // Open email first
     const mailto = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
-    window.open(mailto, '_self');
+    window.location.href = mailto;
 
-    showToast('Invoice email opened for ' + name);
+    // Save in background after mailto fires
+    setTimeout(async () => {
+      try { await saveInvoiceAndReturn(); } catch(e) {}
+      showToast('Invoice email opened for ' + name);
+    }, 500);
   }
 
   function generateInvPDF() {
