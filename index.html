@@ -2742,6 +2742,50 @@
   let _profileCache = null;
 
   // ══════════════════════════════════
+  //  SHARED DOCUMENT VIEWER
+  // ══════════════════════════════════
+  (async function checkForSharedDoc() {
+    const params = new URLSearchParams(window.location.search);
+    const docId = params.get('doc');
+    if (!docId) return;
+
+    // Hide everything
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('authPage').style.display = 'none';
+    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('onboardingPage').style.display = 'none';
+
+    // Create viewer
+    const viewer = document.createElement('div');
+    viewer.id = 'docViewer';
+    viewer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:var(--font-body);color:var(--gray);">Loading document…</div>';
+    document.body.appendChild(viewer);
+
+    try {
+      const { data, error } = await sb.from('shared_documents').select('html_content, doc_type').eq('id', docId).single();
+      if (error || !data) {
+        viewer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:var(--font-body);"><div style="font-size:48px;margin-bottom:16px;">📄</div><div style="font-size:18px;font-weight:600;color:var(--ink);">Document not found</div><div style="font-size:14px;color:var(--gray);margin-top:8px;">This link may have expired or been removed.</div></div>';
+        return;
+      }
+
+      const docType = data.doc_type === 'invoice' ? 'Invoice' : 'Quote';
+      viewer.innerHTML = `
+        <div class="no-print" style="background:#1C1C1E;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;">
+          <span style="font-family:'Plus Jakarta Sans',sans-serif;color:white;font-size:14px;font-weight:600;">Builders<span style="color:#E07A2F;">Invoice</span> <span style="color:rgba(255,255,255,0.4);font-weight:400;margin-left:8px;">${docType}</span></span>
+          <button onclick="window.print()" style="padding:8px 20px;background:#E07A2F;color:white;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Save as PDF</button>
+        </div>
+        <div style="max-width:900px;margin:0 auto;background:white;min-height:calc(100vh - 48px);">${data.html_content}</div>
+      `;
+    } catch(e) {
+      console.error('Doc fetch error:', e);
+      viewer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:var(--font-body);color:var(--red);">Error loading document.</div>';
+    }
+
+    // Stop the rest of the app from initializing
+    window.__isDocViewer = true;
+  })();
+
+  // ══════════════════════════════════
   //  AUTH
   // ══════════════════════════════════
   let authMode = 'login';
@@ -3155,27 +3199,20 @@
   // ══════════════════════════════════
   //  PDF GENERATION & UPLOAD
   // ══════════════════════════════════
-  async function uploadDocumentHtml(htmlContent, filename) {
+  async function uploadDocumentHtml(htmlContent, docType) {
     if (!currentUser) { console.error('No user'); return null; }
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'DM Sans',sans-serif;color:#1C1C1E;background:#fff;}@media print{.no-print{display:none!important;}}</style></head><body>
-<div class="no-print" style="background:#1C1C1E;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
-  <span style="font-family:'Plus Jakarta Sans',sans-serif;color:white;font-size:14px;font-weight:600;">Builders<span style="color:#E07A2F;">Invoice</span></span>
-  <button onclick="window.print()" style="padding:8px 20px;background:#E07A2F;color:white;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Save as PDF</button>
-</div>${htmlContent}</body></html>`;
-
     try {
-      const blob = new Blob([fullHtml], { type: 'text/html' });
-      const path = currentUser.id + '/' + filename;
-      const { data, error } = await sb.storage.from('documents').upload(path, blob, {
-        contentType: 'text/html',
-        upsert: true
-      });
-      if (error) { console.error('Upload error:', error); return null; }
-      const { data: urlData } = sb.storage.from('documents').getPublicUrl(path);
-      console.log('Document URL:', urlData?.publicUrl);
-      return urlData?.publicUrl || null;
+      const { data, error } = await sb.from('shared_documents').insert({
+        user_id: currentUser.id,
+        doc_type: docType || 'quote',
+        html_content: htmlContent
+      }).select('id').single();
+      if (error) { console.error('Doc save error:', error); return null; }
+      const url = window.location.origin + window.location.pathname + '?doc=' + data.id;
+      console.log('Document URL:', url);
+      return url;
     } catch(e) {
-      console.error('Upload error:', e);
+      console.error('Doc upload error:', e);
       return null;
     }
   }
@@ -4147,8 +4184,7 @@
 
       // Upload document and get shareable link
       sendBtn.textContent = 'Uploading…';
-      const filename = `${quoteNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.html`;
-      const pdfUrl = await uploadDocumentHtml(pdfHtml, filename);
+      const pdfUrl = await uploadDocumentHtml(pdfHtml, 'quote');
 
       // Save quote
       await saveQuote('Sent');
@@ -5215,8 +5251,7 @@
         </div>`;
 
       sendBtn.textContent = 'Uploading…';
-      const filename = `${invNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.html`;
-      const pdfUrl = await uploadDocumentHtml(pdfHtml, filename);
+      const pdfUrl = await uploadDocumentHtml(pdfHtml, 'invoice');
 
       // Save invoice
       await saveInvoiceAndReturn();
@@ -5727,6 +5762,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   let authPageShownByUser = false;
 
   sb.auth.onAuthStateChange(async (event, session) => {
+    if (window.__isDocViewer) return; // Don't init app when viewing shared doc
     if (event === 'INITIAL_SESSION') {
       // This fires once on page load — determines initial state
       if (session && session.user) {
