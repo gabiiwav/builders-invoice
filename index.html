@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Builders Invoice</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -3156,61 +3155,29 @@
   // ══════════════════════════════════
   //  PDF GENERATION & UPLOAD
   // ══════════════════════════════════
-  async function generatePdfBlob(htmlContent) {
-    if (typeof html2pdf === 'undefined') {
-      console.error('html2pdf library not loaded!');
-      return null;
-    }
-
-    // Show a loading overlay so user doesn't see the render
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(245,242,238,0.95);z-index:99998;display:flex;align-items:center;justify-content:center;font-family:var(--font-body);font-size:15px;color:var(--ink);font-weight:600;';
-    overlay.textContent = 'Generating PDF…';
-    document.body.appendChild(overlay);
-
-    // Container must be visible and on-screen for html2canvas
-    const container = document.createElement('div');
-    container.style.cssText = 'position:absolute;top:0;left:0;width:816px;background:white;z-index:99997;';
-    container.innerHTML = htmlContent;
-    document.body.appendChild(container);
-
-    // Wait for full render
-    await new Promise(r => setTimeout(r, 800));
+  async function uploadDocumentHtml(htmlContent, filename) {
+    if (!currentUser) { console.error('No user'); return null; }
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'DM Sans',sans-serif;color:#1C1C1E;background:#fff;}@media print{.no-print{display:none!important;}}</style></head><body>
+<div class="no-print" style="background:#1C1C1E;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+  <span style="font-family:'Plus Jakarta Sans',sans-serif;color:white;font-size:14px;font-weight:600;">Builders<span style="color:#E07A2F;">Invoice</span></span>
+  <button onclick="window.print()" style="padding:8px 20px;background:#E07A2F;color:white;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Save as PDF</button>
+</div>${htmlContent}</body></html>`;
 
     try {
-      const opt = {
-        margin: [0.3, 0.4, 0.3, 0.4],
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: 816 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-
-      const blob = await html2pdf().set(opt).from(container).toPdf().output('blob');
-      console.log('PDF blob generated, size:', blob?.size);
-      document.body.removeChild(container);
-      document.body.removeChild(overlay);
-      return blob;
+      const blob = new Blob([fullHtml], { type: 'text/html' });
+      const path = currentUser.id + '/' + filename;
+      const { data, error } = await sb.storage.from('documents').upload(path, blob, {
+        contentType: 'text/html',
+        upsert: true
+      });
+      if (error) { console.error('Upload error:', error); return null; }
+      const { data: urlData } = sb.storage.from('documents').getPublicUrl(path);
+      console.log('Document URL:', urlData?.publicUrl);
+      return urlData?.publicUrl || null;
     } catch(e) {
-      console.error('PDF generation error:', e);
-      try { document.body.removeChild(container); } catch(x) {}
-      try { document.body.removeChild(overlay); } catch(x) {}
+      console.error('Upload error:', e);
       return null;
     }
-  }
-
-  async function uploadPdfToStorage(blob, filename) {
-    if (!blob) { console.error('No blob to upload'); return null; }
-    console.log('Uploading PDF:', filename, 'blob size:', blob.size);
-    const path = currentUser.id + '/' + filename;
-    const { data, error } = await sb.storage.from('documents').upload(path, blob, {
-      contentType: 'application/pdf',
-      upsert: true
-    });
-    if (error) { console.error('Storage upload error:', error); return null; }
-    console.log('Upload success:', data);
-    const { data: urlData } = sb.storage.from('documents').getPublicUrl(path);
-    console.log('Public URL:', urlData?.publicUrl);
-    return urlData?.publicUrl || null;
   }
 
   // ══════════════════════════════════
@@ -4118,7 +4085,7 @@
     // Show loading state
     const sendBtn = document.querySelector('.totals-send-btn');
     const origText = sendBtn.textContent;
-    sendBtn.textContent = 'Generating PDF…';
+    sendBtn.textContent = 'Sending…';
     sendBtn.disabled = true;
 
     try {
@@ -4178,11 +4145,10 @@
           <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${bizName || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
         </div>`;
 
-      // Generate PDF blob and upload
-      sendBtn.textContent = 'Uploading PDF…';
-      const blob = await generatePdfBlob(pdfHtml);
-      const filename = `${quoteNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.pdf`;
-      const pdfUrl = await uploadPdfToStorage(blob, filename);
+      // Upload document and get shareable link
+      sendBtn.textContent = 'Uploading…';
+      const filename = `${quoteNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.html`;
+      const pdfUrl = await uploadDocumentHtml(pdfHtml, filename);
 
       // Save quote
       await saveQuote('Sent');
@@ -4195,7 +4161,7 @@
         `Quote: ${quoteNum}\n` +
         (jobDesc ? `Job: ${jobDesc}\n` : '') +
         `Total: ${total}\n\n` +
-        (pdfUrl ? `📄 View/Download PDF:\n${pdfUrl}\n\n` : '') +
+        (pdfUrl ? `📄 View Quote:\n${pdfUrl}\n\n` : '') +
         `If you have any questions, feel free to reply to this email.\n\n` +
         `Thank you,\n${bizName || 'Builders Invoice'}`
       );
@@ -5183,7 +5149,7 @@
     // Show loading
     const sendBtn = document.querySelector('#page-invoice-edit .totals-draft-btn');
     const origText = sendBtn.textContent;
-    sendBtn.textContent = 'Generating PDF…';
+    sendBtn.textContent = 'Sending…';
     sendBtn.disabled = true;
 
     try {
@@ -5248,10 +5214,9 @@
           <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${bizName || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
         </div>`;
 
-      sendBtn.textContent = 'Uploading PDF…';
-      const blob = await generatePdfBlob(pdfHtml);
-      const filename = `${invNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.pdf`;
-      const pdfUrl = await uploadPdfToStorage(blob, filename);
+      sendBtn.textContent = 'Uploading…';
+      const filename = `${invNum.replace(/[^a-zA-Z0-9-]/g,'_')}_${Date.now()}.html`;
+      const pdfUrl = await uploadDocumentHtml(pdfHtml, filename);
 
       // Save invoice
       await saveInvoiceAndReturn();
@@ -5265,7 +5230,7 @@
         (jobDesc ? `Job: ${jobDesc}\n` : '') +
         `Amount Due: ${total}\n` +
         `Payment: ${dueLabel}\n\n` +
-        (pdfUrl ? `📄 View/Download PDF:\n${pdfUrl}\n\n` : '') +
+        (pdfUrl ? `📄 View Invoice:\n${pdfUrl}\n\n` : '') +
         `If you have any questions, feel free to reply to this email.\n\n` +
         `Thank you,\n${bizName || 'Builders Invoice'}`
       );
