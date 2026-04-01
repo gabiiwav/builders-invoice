@@ -1869,48 +1869,8 @@
       </div>
 
       <!-- Your Business -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-label">Your Business</span>
-        </div>
-        <div class="card-body">
-          <div class="logo-upload">
-            <label class="logo-preview" id="logoPreview">
-              <input type="file" id="logoInput" accept="image/*" hidden onchange="handleLogo(this.files)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-              </svg>
-            </label>
-            <div class="logo-info">
-              <div class="logo-info-title">Company Logo</div>
-              <div class="logo-info-hint">Click to upload — shows on quotes & invoices</div>
-              <button class="logo-remove" id="logoRemoveBtn" onclick="removeLogo()">Remove logo</button>
-            </div>
-          </div>
-          <div class="form-grid form-grid-2" style="margin-top:16px;">
-            <div class="form-field">
-              <label>Business Name</label>
-              <input type="text" id="bizName" placeholder="Your company name">
-            </div>
-            <div class="form-field">
-              <label>Phone</label>
-              <input type="tel" id="bizPhone" placeholder="(555) 000-0000" oninput="formatPhone(this)">
-            </div>
-            <div class="form-field">
-              <label>Email</label>
-              <input type="email" id="bizEmail" placeholder="you@company.com">
-            </div>
-            <div class="form-field">
-              <label>Address</label>
-              <input type="text" id="bizAddress" placeholder="123 Main St, City, State">
-            </div>
-            <div class="form-field">
-              <label>License #</label>
-              <input type="text" id="bizLicense" placeholder="e.g. #CBC-12345">
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Hidden business fields (populated from Settings) -->
+      <input type="hidden" id="bizName"><input type="hidden" id="bizPhone"><input type="hidden" id="bizEmail"><input type="hidden" id="bizAddress"><input type="hidden" id="bizLicense">
 
       <!-- Client Info -->
       <div class="card">
@@ -2357,12 +2317,28 @@
         <div class="card-header"><span class="card-label">Accepted Payment Methods</span></div>
         <div class="card-body">
           <div class="payment-grid" id="paymentGrid"></div>
+          <div id="paymentHandles" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+            <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">Enter your usernames — these show on quotes & invoices so clients know where to pay.</p>
+            <div class="form-grid form-grid-2">
+              <div class="form-field"><label>💵 CashApp</label><input type="text" id="sHandleCashApp" placeholder="$yourname"></div>
+              <div class="form-field"><label>💙 Venmo</label><input type="text" id="sHandleVenmo" placeholder="@yourname"></div>
+              <div class="form-field"><label>🅿️ PayPal</label><input type="text" id="sHandlePayPal" placeholder="you@email.com or @handle"></div>
+              <div class="form-field"><label>⚡ Zelle</label><input type="text" id="sHandleZelle" placeholder="phone or email"></div>
+            </div>
+          </div>
         </div>
       </div>
 
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
         <span id="settingsSaveStatus" style="font-size:13px;color:var(--green);font-weight:500;align-self:center;opacity:0;transition:opacity 0.3s;">✓ Settings saved</span>
         <button class="btn btn-primary" onclick="saveSettingsData()">Save Settings</button>
+      </div>
+
+      <!-- Data Export -->
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:6px;">Data Backup</h3>
+        <p style="font-size:13px;color:var(--gray);margin-bottom:16px;">Download all your quotes, invoices, clients, and settings as a JSON file.</p>
+        <button class="btn" style="background:var(--canvas);border:1.5px solid var(--border);" onclick="exportAllData()" id="exportBtn">Export All Data ↓</button>
       </div>
     </div>
   </div><!-- /page-settings -->
@@ -2437,18 +2413,8 @@
           </div>
         </div>
 
-        <!-- Biz Info -->
-        <div class="card">
-          <div class="card-header"><span class="card-label">Your Business</span></div>
-          <div class="card-body">
-            <div class="form-grid form-grid-2">
-              <div class="form-field"><label>Business Name</label><input type="text" id="invBizName" placeholder="Your company name"></div>
-              <div class="form-field"><label>Phone</label><input type="tel" id="invBizPhone" placeholder="(555) 000-0000" oninput="formatPhone(this)"></div>
-              <div class="form-field"><label>Email</label><input type="email" id="invBizEmail" placeholder="you@company.com"></div>
-              <div class="form-field"><label>Address</label><input type="text" id="invBizAddress" placeholder="123 Main St, City, State"></div>
-            </div>
-          </div>
-        </div>
+        <!-- Hidden business fields (populated from Settings) -->
+        <input type="hidden" id="invBizName"><input type="hidden" id="invBizPhone"><input type="hidden" id="invBizEmail"><input type="hidden" id="invBizAddress">
 
         <!-- Client Info -->
         <div class="card">
@@ -4043,6 +4009,7 @@
   <div style="margin-bottom:24px;">
     <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:8px;">Accepted Payment</p>
     <div>${paymentHtml}</div>
+    ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) parts.push('💵 CashApp: '+h.cashapp); if(h.venmo) parts.push('💙 Venmo: '+h.venmo); if(h.paypal) parts.push('🅿️ PayPal: '+h.paypal); if(h.zelle) parts.push('⚡ Zelle: '+h.zelle); return parts.length ? '<div style="margin-top:8px;font-size:12px;color:#3E3E44;line-height:2;">'+parts.map(p=>'<span style="margin-right:16px;">'+p+'</span>').join('')+'</div>' : ''; })()}
   </div>
 
   ${attachHtml}
@@ -4303,8 +4270,20 @@
       </td></tr></table>
       ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${escapeHtml(notes)}</div></div>` : ''}
       ${photosHtml}
+      ${buildPaymentHandlesHtml()}
       <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${escapeHtml(bizName) || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
     </div>`;
+  }
+
+  function buildPaymentHandlesHtml() {
+    const handles = _profileCache?.payment_handles || {};
+    const items = [];
+    if (handles.cashapp) items.push(`<span style="margin-right:16px;">💵 CashApp: <strong>${escapeHtml(handles.cashapp)}</strong></span>`);
+    if (handles.venmo) items.push(`<span style="margin-right:16px;">💙 Venmo: <strong>${escapeHtml(handles.venmo)}</strong></span>`);
+    if (handles.paypal) items.push(`<span style="margin-right:16px;">🅿️ PayPal: <strong>${escapeHtml(handles.paypal)}</strong></span>`);
+    if (handles.zelle) items.push(`<span style="margin-right:16px;">⚡ Zelle: <strong>${escapeHtml(handles.zelle)}</strong></span>`);
+    if (items.length === 0) return '';
+    return `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;border-radius:6px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:8px;">Payment Info</div><div style="font-size:13px;line-height:2;">${items.join('')}</div></div>`;
   }
 
   async function convertToInvoice() {
@@ -4736,6 +4715,13 @@
     }
     if (data.payments) activePayments = new Set(data.payments);
     renderPaymentToggles();
+
+    // Payment handles
+    const handles = data.payment_handles || {};
+    document.getElementById('sHandleCashApp').value = handles.cashapp || '';
+    document.getElementById('sHandleVenmo').value = handles.venmo || '';
+    document.getElementById('sHandlePayPal').value = handles.paypal || '';
+    document.getElementById('sHandleZelle').value = handles.zelle || '';
   }
 
   async function saveSettingsData() {
@@ -4749,12 +4735,78 @@
       default_tax_rate: parseFloat(document.getElementById('sDefaultTax').value) || 8,
       default_valid_days: parseInt(document.getElementById('sDefaultValid').value) || 30,
       default_notes: document.getElementById('sDefaultNotes').value,
-      payments: Array.from(activePayments)
+      payments: Array.from(activePayments),
+      payment_handles: {
+        cashapp: document.getElementById('sHandleCashApp').value.trim(),
+        venmo: document.getElementById('sHandleVenmo').value.trim(),
+        paypal: document.getElementById('sHandlePayPal').value.trim(),
+        zelle: document.getElementById('sHandleZelle').value.trim()
+      }
     };
     await dbSaveProfile(profile);
     const el = document.getElementById('settingsSaveStatus');
     el.style.opacity = '1';
     setTimeout(() => el.style.opacity = '0', 2500);
+  }
+
+  async function exportAllData() {
+    const btn = document.getElementById('exportBtn');
+    btn.textContent = 'Exporting…';
+    btn.disabled = true;
+
+    try {
+      const [profile, quotes, invoices, clients] = await Promise.all([
+        dbGetProfile(),
+        dbGetQuotes(),
+        dbGetInvoices(),
+        dbGetClients()
+      ]);
+
+      // Get quote items and invoice items via parent IDs
+      const quoteIds = (quotes || []).map(q => q.id).filter(Boolean);
+      const invoiceIds = (invoices || []).map(i => i.id).filter(Boolean);
+
+      let quoteItems = [], invoiceItems = [];
+      if (quoteIds.length) {
+        const { data } = await sb.from('quote_items').select('*').in('quote_id', quoteIds).order('sort_order');
+        quoteItems = data || [];
+      }
+      if (invoiceIds.length) {
+        const { data } = await sb.from('invoice_items').select('*').in('invoice_id', invoiceIds).order('sort_order');
+        invoiceItems = data || [];
+      }
+
+      const backup = {
+        exported_at: new Date().toISOString(),
+        app: 'Builders Invoice',
+        user_email: currentUser.email,
+        profile: profile,
+        clients: clients,
+        quotes: quotes,
+        quote_items: quoteItems || [],
+        invoices: invoices,
+        invoice_items: invoiceItems || []
+      };
+
+      const json = JSON.stringify(backup, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `builders-invoice-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('Backup downloaded');
+    } catch(e) {
+      console.error('Export error:', e);
+      showToast('Export failed — try again');
+    } finally {
+      btn.textContent = 'Export All Data ↓';
+      btn.disabled = false;
+    }
   }
 
   function settingsUploadLogo() {
@@ -5380,6 +5432,7 @@
         <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;"><table style="width:100%;"><tr><td style="font-weight:700;">Amount Due</td><td style="text-align:right;font-size:22px;font-weight:800;">${total}</td></tr></table></div>
       </td></tr></table>
       ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${escapeHtml(notes)}</div></div>` : ''}
+      ${buildPaymentHandlesHtml()}
       <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${escapeHtml(bizName) || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
     </div>`;
   }
@@ -5552,6 +5605,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   ${paymentHtml ? `<div style="margin-bottom:24px;">
     <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:8px;">Accepted Payment</p>
     <div>${paymentHtml}</div>
+    ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) parts.push('💵 CashApp: '+h.cashapp); if(h.venmo) parts.push('💙 Venmo: '+h.venmo); if(h.paypal) parts.push('🅿️ PayPal: '+h.paypal); if(h.zelle) parts.push('⚡ Zelle: '+h.zelle); return parts.length ? '<div style="margin-top:8px;font-size:12px;color:#3E3E44;line-height:2;">'+parts.map(p=>'<span style="margin-right:16px;">'+p+'</span>').join('')+'</div>' : ''; })()}
   </div>` : ''}
 
   <!-- Footer -->
