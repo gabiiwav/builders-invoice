@@ -3077,6 +3077,8 @@
       errEl.style.color = 'var(--green)';
       errEl.textContent = '✓ Password updated! You can now log in.';
       btn.textContent = 'Done!';
+      resetVerifiedCode = '';
+      resetEmailAddress = '';
 
       setTimeout(() => {
         backToLogin();
@@ -5842,7 +5844,9 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       }
 
       // Only show onboarding if we successfully fetched the profile AND it has no biz_name
-      if (profileFetched && profile && !profile.biz_name) {
+      // Only show onboarding if profile has NO business data at all
+      const hasAnyBizData = profile && (profile.biz_name || profile.biz_email || profile.biz_phone || profile.biz_address);
+      if (profileFetched && profile && !hasAnyBizData) {
         showOnboarding();
         return;
       }
