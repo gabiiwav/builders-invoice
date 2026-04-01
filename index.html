@@ -1426,21 +1426,9 @@
   .onboard-emoji { font-size:40px; text-align:center; margin-bottom:12px; }
   .onboard-title { font-family:var(--font-display); font-size:22px; font-weight:800; text-align:center; color:var(--ink); margin-bottom:4px; }
   .onboard-sub { font-size:13px; color:var(--gray); text-align:center; margin-bottom:24px; }
-  .ob-trade-grid {
-    display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px;
-  }
-  .ob-trade-btn {
-    padding:10px 12px; border:1.5px solid var(--border); border-radius:8px;
-    background:var(--white); font-family:var(--font-body); font-size:13px;
-    font-weight:500; color:var(--ink); cursor:pointer; transition:all 0.15s;
-    text-align:left;
-  }
-  .ob-trade-btn:hover { border-color:var(--amber); background:var(--amber-pale); }
-  .ob-trade-btn.selected { border-color:var(--amber); background:var(--amber-pale); color:var(--amber-deep); font-weight:600; }
 
   @media (max-width:500px) {
     .onboard-card { padding:28px 20px; }
-    .ob-trade-grid { grid-template-columns:repeat(2,1fr); }
   }
 
   /* ══════════════════════════════════
@@ -1747,36 +1735,12 @@
 <!-- ═══ ONBOARDING ═══ -->
 <div id="onboardingPage" class="auth-page" style="display:none;">
   <div class="onboard-card">
-    <div class="onboard-step-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+    <div class="onboard-step-dots"><span class="dot active"></span><span class="dot"></span></div>
 
-    <!-- Step 1: Welcome + Trade -->
+    <!-- Step 1: Business Info -->
     <div class="onboard-step" id="obStep1">
-      <div class="onboard-emoji">🏗️</div>
-      <h2 class="onboard-title">Welcome to Builders<span style="color:var(--amber);">Invoice</span></h2>
-      <p class="onboard-sub">Let's set up your account in 60 seconds.</p>
-      <div class="auth-field"><label>Your Name</label><input type="text" id="obName" placeholder="Doug Builder"></div>
-      <div class="auth-field">
-        <label>What's Your Trade?</label>
-        <div class="ob-trade-grid">
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🔨 General</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🏠 Roofing</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">⚡ Electrical</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🔧 Plumbing</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">❄️ HVAC</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🎨 Painting</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🪵 Flooring</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🌿 Landscaping</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🧹 Cleaning</button>
-          <button class="ob-trade-btn" onclick="selectTrade(this)">🛠️ Other</button>
-        </div>
-      </div>
-      <button class="auth-btn auth-btn-primary" onclick="obNext(2)">Continue →</button>
-    </div>
-
-    <!-- Step 2: Business Info -->
-    <div class="onboard-step" id="obStep2" style="display:none;">
       <div class="onboard-emoji">📋</div>
-      <h2 class="onboard-title">Business Details</h2>
+      <h2 class="onboard-title">Welcome to Builders<span style="color:var(--amber);">Invoice</span></h2>
       <p class="onboard-sub">This info auto-fills on every quote and invoice.</p>
       <div class="auth-field"><label>Business Name</label><input type="text" id="obBizName" placeholder="Builder Bros LLC"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -1785,14 +1749,11 @@
       </div>
       <div class="auth-field"><label>Address</label><input type="text" id="obBizAddress" placeholder="123 Main St, City, State"></div>
       <div class="auth-field"><label>License # <span style="font-weight:400;color:var(--gray);">(optional)</span></label><input type="text" id="obBizLicense" placeholder="CON-12345"></div>
-      <div style="display:flex;gap:10px;">
-        <button class="auth-btn" style="background:var(--canvas);color:var(--ink);flex:1;" onclick="obNext(1)">← Back</button>
-        <button class="auth-btn auth-btn-primary" style="flex:2;" onclick="obNext(3)">Continue →</button>
-      </div>
+      <button class="auth-btn auth-btn-primary" onclick="obNext(2)">Continue →</button>
     </div>
 
-    <!-- Step 3: Defaults -->
-    <div class="onboard-step" id="obStep3" style="display:none;">
+    <!-- Step 2: Defaults -->
+    <div class="onboard-step" id="obStep2" style="display:none;">
       <div class="onboard-emoji">⚙️</div>
       <h2 class="onboard-title">Your Defaults</h2>
       <p class="onboard-sub">Set these once and forget — they'll prefill automatically.</p>
@@ -1810,7 +1771,7 @@
       </div>
       <div class="auth-field"><label>Default Notes <span style="font-weight:400;color:var(--gray);">(shows on every quote)</span></label><textarea id="obNotes" placeholder="Payment due upon completion. Thank you for your business!" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:var(--canvas);min-height:70px;resize:vertical;outline:none;"></textarea></div>
       <div style="display:flex;gap:10px;">
-        <button class="auth-btn" style="background:var(--canvas);color:var(--ink);flex:1;" onclick="obNext(2)">← Back</button>
+        <button class="auth-btn" style="background:var(--canvas);color:var(--ink);flex:1;" onclick="obNext(1)">← Back</button>
         <button class="auth-btn auth-btn-primary" style="flex:2;" onclick="finishOnboarding()">Start Building Quotes 🚀</button>
       </div>
     </div>
@@ -5719,14 +5680,6 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   // ══════════════════════════════════
   //  ONBOARDING
   // ══════════════════════════════════
-  let obSelectedTrade = '';
-
-  function selectTrade(btn) {
-    document.querySelectorAll('.ob-trade-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    obSelectedTrade = btn.textContent.trim();
-  }
-
   function obNext(step) {
     document.querySelectorAll('.onboard-step').forEach(s => s.style.display = 'none');
     document.getElementById('obStep' + step).style.display = '';
@@ -5735,28 +5688,21 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       if (i < step - 1) d.classList.add('done');
       if (i === step - 1) d.classList.add('active');
     });
-
-    // Pre-fill name from auth if available on step 1
+    // Pre-fill email on step 1
     if (step === 1 && currentUser) {
-      const nameInput = document.getElementById('obName');
-      if (!nameInput.value) nameInput.value = currentUser.user_metadata?.full_name || '';
-    }
-    // Pre-fill email on step 2
-    if (step === 2 && currentUser) {
       const emailInput = document.getElementById('obBizEmail');
       if (!emailInput.value) emailInput.value = currentUser.email || '';
     }
   }
 
   function showOnboarding() {
-    appInitialized = true; // Prevent auth listener from re-firing
+    appInitialized = true;
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('authPage').style.display = 'none';
     document.getElementById('appShell').style.display = 'none';
     document.getElementById('onboardingPage').style.display = 'flex';
     obNext(1);
     if (currentUser) {
-      document.getElementById('obName').value = currentUser.user_metadata?.full_name || '';
       document.getElementById('obBizEmail').value = currentUser.email || '';
     }
   }
@@ -5792,7 +5738,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     document.getElementById('onboardingPage').style.display = 'none';
     document.getElementById('appShell').style.display = '';
 
-    const name = document.getElementById('obName').value.trim() || currentUser.email.split('@')[0];
+    const name = document.getElementById('obBizName').value.trim() || currentUser.email.split('@')[0];
     document.getElementById('navUserName').textContent = name;
     document.getElementById('navUserEmail').textContent = currentUser.email || '';
     document.getElementById('navAvatarLetter').textContent = (name[0] || 'U').toUpperCase();
