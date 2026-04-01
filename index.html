@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2897,37 +2897,47 @@
 
   async function sendResetEmail() {
     const email = document.getElementById('forgotEmail').value.trim();
+    const errEl = document.getElementById('forgotError');
     if (!email) {
-      document.getElementById('forgotError').style.display = '';
-      document.getElementById('forgotError').textContent = 'Please enter your email.';
+      errEl.style.display = '';
+      errEl.style.background = 'var(--red-pale)';
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = 'Please enter your email.';
       return;
     }
 
     const btn = document.getElementById('forgotSubmitBtn');
     btn.disabled = true; btn.textContent = 'Sending…';
+    errEl.style.display = 'none';
 
     try {
-      const { error } = await sb.auth.resetPasswordForEmail(email, {
+      const { data, error } = await sb.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + window.location.pathname
       });
 
+      console.log('Reset result:', { data, error });
+
       if (error) {
-        document.getElementById('forgotError').style.display = '';
-        document.getElementById('forgotError').textContent = error.message;
+        errEl.style.display = '';
+        errEl.style.background = 'var(--red-pale)';
+        errEl.style.color = 'var(--red)';
+        errEl.textContent = 'Error: ' + error.message;
         btn.disabled = false; btn.textContent = 'Send Reset Link';
         return;
       }
 
       // Show success
-      const errEl = document.getElementById('forgotError');
       errEl.style.display = '';
       errEl.style.background = 'var(--green-pale)';
       errEl.style.color = 'var(--green)';
-      errEl.textContent = '✓ Reset link sent! Check your email.';
+      errEl.textContent = '✓ Reset link sent! Check your email (and spam folder).';
       btn.disabled = false; btn.textContent = 'Send Reset Link';
     } catch(e) {
-      document.getElementById('forgotError').style.display = '';
-      document.getElementById('forgotError').textContent = e.message || 'Something went wrong.';
+      console.error('Reset error:', e);
+      errEl.style.display = '';
+      errEl.style.background = 'var(--red-pale)';
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = 'Failed to send: ' + (e.message || 'Check SMTP settings in Supabase.');
       btn.disabled = false; btn.textContent = 'Send Reset Link';
     }
   }
