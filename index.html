@@ -3148,14 +3148,16 @@
     };
 
     let quoteId;
-    if (quote.id && quote.id.length > 10) {
+    if (quote.id && typeof quote.id === 'string' && quote.id.includes('-')) {
       // Existing UUID — update
       payload.id = quote.id;
-      await sb.from('quotes').upsert(payload);
+      const { error } = await sb.from('quotes').upsert(payload);
+      if (error) console.error('Quote upsert error:', error);
       quoteId = quote.id;
     } else {
       // New quote
-      const { data } = await sb.from('quotes').insert(payload).select().single();
+      const { data, error } = await sb.from('quotes').insert(payload).select().single();
+      if (error) { console.error('Quote insert error:', error); return null; }
       quoteId = data.id;
     }
 
@@ -3219,12 +3221,14 @@
     };
 
     let invId;
-    if (invoice.id && invoice.id.length > 10) {
+    if (invoice.id && typeof invoice.id === 'string' && invoice.id.includes('-')) {
       payload.id = invoice.id;
-      await sb.from('invoices').upsert(payload);
+      const { error } = await sb.from('invoices').upsert(payload);
+      if (error) console.error('Invoice upsert error:', error);
       invId = invoice.id;
     } else {
-      const { data } = await sb.from('invoices').insert(payload).select().single();
+      const { data, error } = await sb.from('invoices').insert(payload).select().single();
+      if (error) { console.error('Invoice insert error:', error); return null; }
       invId = data.id;
     }
 
@@ -3869,6 +3873,10 @@
   //  PDF GENERATION
   // ══════════════════════════════════
   function generatePDF() {
+    // Auto-save the quote
+    const existingQuote = currentQuoteId ? getQuotes().find(q => q.id === currentQuoteId) : null;
+    saveQuote(existingQuote?.status || 'Draft').catch(e => console.warn('Auto-save error:', e));
+
     const clientName = document.getElementById('clientName').value || 'Client';
     const clientPhone = document.getElementById('clientPhone').value || '';
     const clientEmail = document.getElementById('clientEmail').value || '';
@@ -4090,7 +4098,7 @@
     });
 
     return {
-      id: currentQuoteId || 'qt_' + Date.now(),
+      id: currentQuoteId || null,
       quoteNum: document.getElementById('estimateNum').value,
       status: status,
       date: document.getElementById('estimateDate').value,
@@ -5191,7 +5199,7 @@
     const existing = currentInvId ? getInvoices().find(i => i.id === currentInvId) : null;
 
     return {
-      id: currentInvId || 'inv_' + Date.now(),
+      id: currentInvId || null,
       invoiceNum: document.getElementById('invNum').value,
       status: existing?.status || 'Unpaid',
       date: date,
@@ -5376,7 +5384,25 @@
     </div>`;
   }
 
+  async function saveInvoiceOnly() {
+    const data = collectInvoiceData();
+    const items = [];
+    document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
+      const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
+      const unit = row.querySelector('.unit-select')?.value || 'each';
+      const inputs = row.querySelectorAll('input[type="number"]');
+      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', source: row.dataset.sourceName || '' });
+    });
+    const invId = await dbSaveInvoice(data, items);
+    currentInvId = invId;
+    await refreshInvoices();
+    return invId;
+  }
+
   function generateInvPDF() {
+    // Auto-save the invoice
+    saveInvoiceOnly().catch(e => console.warn('Auto-save error:', e));
+
     const clientName = document.getElementById('invClientName').value || 'Client';
     const clientPhone = document.getElementById('invClientPhone').value || '';
     const clientEmail = document.getElementById('invClientEmail').value || '';
