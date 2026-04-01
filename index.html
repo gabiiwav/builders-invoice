@@ -1703,20 +1703,35 @@
       </div>
     </div>
 
-    <!-- Forgot Password -->
+    <!-- Forgot Password — Step 1: Enter Email -->
     <div id="authForgotView" style="display:none;">
       <div style="font-size:48px;text-align:center;margin-bottom:16px;">🔑</div>
       <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">Reset password</h3>
-      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:20px;">Enter your email and we'll send you a reset link.</p>
+      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:20px;">Enter your email and we'll send you a 6-digit code.</p>
       <div class="auth-error" id="forgotError"></div>
-      <div class="auth-field"><label>Email</label><input type="email" id="forgotEmail" placeholder="you@email.com" onkeydown="if(event.key==='Enter')sendResetEmail()"></div>
-      <button class="auth-btn auth-btn-primary" id="forgotSubmitBtn" onclick="sendResetEmail()">Send Reset Link</button>
+      <div class="auth-field"><label>Email</label><input type="email" id="forgotEmail" placeholder="you@email.com" onkeydown="if(event.key==='Enter')sendResetCode()"></div>
+      <button class="auth-btn auth-btn-primary" id="forgotSubmitBtn" onclick="sendResetCode()">Send Reset Code</button>
       <div style="text-align:center;margin-top:12px;">
         <a href="#" onclick="backToLogin();return false" style="font-size:13px;color:var(--amber);text-decoration:none;font-weight:500;">← Back to log in</a>
       </div>
     </div>
 
-    <!-- Reset Password (after clicking email link) -->
+    <!-- Forgot Password — Step 2: Enter Code -->
+    <div id="authCodeView" style="display:none;">
+      <div style="font-size:48px;text-align:center;margin-bottom:16px;">📧</div>
+      <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">Check your email</h3>
+      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:4px;">We sent a 6-digit code to:</p>
+      <p style="font-size:14px;font-weight:600;color:var(--ink);text-align:center;margin-bottom:20px;" id="resetEmailDisplay"></p>
+      <div class="auth-error" id="codeError"></div>
+      <div class="auth-field"><label>6-Digit Code</label><input type="text" id="resetCode" placeholder="000000" maxlength="6" style="text-align:center;font-family:var(--font-mono);font-size:24px;letter-spacing:8px;" onkeydown="if(event.key==='Enter')verifyResetCode()"></div>
+      <button class="auth-btn auth-btn-primary" id="codeSubmitBtn" onclick="verifyResetCode()">Verify Code</button>
+      <div style="text-align:center;margin-top:12px;display:flex;justify-content:center;gap:16px;">
+        <a href="#" onclick="sendResetCode();return false" style="font-size:12px;color:var(--gray);text-decoration:none;">Resend code</a>
+        <a href="#" onclick="backToLogin();return false" style="font-size:12px;color:var(--amber);text-decoration:none;font-weight:500;">← Back to log in</a>
+      </div>
+    </div>
+
+    <!-- Forgot Password — Step 3: New Password -->
     <div id="authResetView" style="display:none;">
       <div style="font-size:48px;text-align:center;margin-bottom:16px;">🔐</div>
       <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">New password</h3>
@@ -2882,6 +2897,7 @@
     document.getElementById('authMainView').style.display = 'none';
     document.getElementById('authConfirmView').style.display = 'none';
     document.getElementById('authResetView').style.display = 'none';
+    document.getElementById('authCodeView').style.display = 'none';
     document.getElementById('authForgotView').style.display = '';
     document.getElementById('forgotEmail').value = document.getElementById('authEmail').value || '';
     document.getElementById('forgotError').style.display = 'none';
@@ -2891,11 +2907,16 @@
     document.getElementById('authMainView').style.display = '';
     document.getElementById('authConfirmView').style.display = 'none';
     document.getElementById('authForgotView').style.display = 'none';
+    document.getElementById('authCodeView').style.display = 'none';
     document.getElementById('authResetView').style.display = 'none';
     switchAuthTab('login');
   }
 
-  async function sendResetEmail() {
+  // ── Forgot Password (EmailJS + 6-digit code) ──
+  let resetEmailAddress = '';
+  let resetVerifiedCode = '';
+
+  async function sendResetCode() {
     const email = document.getElementById('forgotEmail').value.trim();
     const errEl = document.getElementById('forgotError');
     if (!email) {
@@ -2911,68 +2932,123 @@
     errEl.style.display = 'none';
 
     try {
-      const { data, error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + window.location.pathname
+      // Generate 6-digit code
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+      // Save to Supabase
+      const { error: dbError } = await sb.from('password_resets').insert({
+        email: email,
+        code: code,
+        expires_at: expiresAt
       });
 
-      console.log('Reset result:', { data, error });
-
-      if (error) {
+      if (dbError) {
+        console.error('DB error:', dbError);
         errEl.style.display = '';
         errEl.style.background = 'var(--red-pale)';
         errEl.style.color = 'var(--red)';
-        errEl.textContent = 'Error: ' + error.message;
-        btn.disabled = false; btn.textContent = 'Send Reset Link';
+        errEl.textContent = 'Error saving reset code. Try again.';
+        btn.disabled = false; btn.textContent = 'Send Reset Code';
         return;
       }
 
-      // Show success
-      errEl.style.display = '';
-      errEl.style.background = 'var(--green-pale)';
-      errEl.style.color = 'var(--green)';
-      errEl.textContent = '✓ Reset link sent! Check your email (and spam folder).';
-      btn.disabled = false; btn.textContent = 'Send Reset Link';
+      // Send via EmailJS
+      await emailjs.send('service_i3t7fwd', 'template_h4pu8aq', {
+        to_email: email,
+        reset_code: code
+      });
+
+      // Show code entry step
+      resetEmailAddress = email;
+      document.getElementById('resetEmailDisplay').textContent = email;
+      document.getElementById('authForgotView').style.display = 'none';
+      document.getElementById('authCodeView').style.display = '';
+      document.getElementById('resetCode').value = '';
+      document.getElementById('resetCode').focus();
+
     } catch(e) {
-      console.error('Reset error:', e);
+      console.error('Reset code error:', e);
       errEl.style.display = '';
       errEl.style.background = 'var(--red-pale)';
       errEl.style.color = 'var(--red)';
-      errEl.textContent = 'Failed to send: ' + (e.message || 'Check SMTP settings in Supabase.');
-      btn.disabled = false; btn.textContent = 'Send Reset Link';
+      errEl.textContent = 'Failed to send code: ' + (e.text || e.message || 'Try again.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Send Reset Code';
     }
   }
 
-  // ── Resend Confirmation ──
-  async function resendConfirmation() {
-    const email = document.getElementById('confirmEmailAddr').textContent;
-    if (!email) return;
+  async function verifyResetCode() {
+    const code = document.getElementById('resetCode').value.trim();
+    const errEl = document.getElementById('codeError');
 
-    document.getElementById('resendStatus').textContent = 'Sending…';
+    if (!code || code.length !== 6) {
+      errEl.style.display = '';
+      errEl.style.background = 'var(--red-pale)';
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = 'Please enter the 6-digit code.';
+      return;
+    }
+
+    const btn = document.getElementById('codeSubmitBtn');
+    btn.disabled = true; btn.textContent = 'Verifying…';
+    errEl.style.display = 'none';
+
     try {
-      const { error } = await sb.auth.resend({ type: 'signup', email });
-      if (error) {
-        document.getElementById('resendStatus').textContent = error.message;
-      } else {
-        document.getElementById('resendStatus').textContent = '✓ Confirmation email resent!';
+      // Check code against DB
+      const { data, error } = await sb.from('password_resets')
+        .select('*')
+        .eq('code', code)
+        .eq('email', resetEmailAddress)
+        .eq('used', false)
+        .gt('expires_at', new Date().toISOString())
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        errEl.style.display = '';
+        errEl.style.background = 'var(--red-pale)';
+        errEl.style.color = 'var(--red)';
+        errEl.textContent = 'Invalid or expired code. Try again.';
+        btn.disabled = false; btn.textContent = 'Verify Code';
+        return;
       }
+
+      // Code verified — show new password form
+      resetVerifiedCode = code;
+      document.getElementById('authCodeView').style.display = 'none';
+      document.getElementById('authResetView').style.display = '';
+      document.getElementById('resetPassword').focus();
+
     } catch(e) {
-      document.getElementById('resendStatus').textContent = e.message || 'Failed to resend.';
+      console.error('Verify error:', e);
+      errEl.style.display = '';
+      errEl.style.background = 'var(--red-pale)';
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = 'Error verifying code. Try again.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Verify Code';
     }
-    setTimeout(() => document.getElementById('resendStatus').textContent = '', 5000);
   }
 
-  // ── Reset Password (from email link) ──
   async function submitNewPassword() {
     const pw = document.getElementById('resetPassword').value;
     const pw2 = document.getElementById('resetPasswordConfirm').value;
     const errEl = document.getElementById('resetError');
+    errEl.style.display = 'none';
 
     if (!pw || pw.length < 6) {
-      errEl.style.display = ''; errEl.textContent = 'Password must be at least 6 characters.';
+      errEl.style.display = '';
+      errEl.style.background = 'var(--red-pale)';
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = 'Password must be at least 6 characters.';
       return;
     }
     if (pw !== pw2) {
-      errEl.style.display = ''; errEl.textContent = 'Passwords do not match.';
+      errEl.style.display = '';
+      errEl.style.background = 'var(--red-pale)';
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = 'Passwords do not match.';
       return;
     }
 
@@ -2980,39 +3056,41 @@
     btn.disabled = true; btn.textContent = 'Updating…';
 
     try {
-      const { error } = await sb.auth.updateUser({ password: pw });
-      if (error) {
-        errEl.style.display = ''; errEl.textContent = error.message;
+      // Call the Supabase function to reset password
+      const { data, error } = await sb.rpc('reset_user_password', {
+        reset_code: resetVerifiedCode,
+        new_password: pw
+      });
+
+      if (error || data === false) {
+        errEl.style.display = '';
+        errEl.style.background = 'var(--red-pale)';
+        errEl.style.color = 'var(--red)';
+        errEl.textContent = error?.message || 'Failed to update password. Code may have expired.';
         btn.disabled = false; btn.textContent = 'Update Password';
         return;
       }
 
+      // Success!
       errEl.style.display = '';
       errEl.style.background = 'var(--green-pale)';
       errEl.style.color = 'var(--green)';
-      errEl.textContent = '✓ Password updated! Redirecting…';
+      errEl.textContent = '✓ Password updated! You can now log in.';
+      btn.textContent = 'Done!';
+
       setTimeout(() => {
-        window.location.hash = '';
-        window.location.reload();
-      }, 1500);
+        backToLogin();
+      }, 2000);
+
     } catch(e) {
-      errEl.style.display = ''; errEl.textContent = e.message || 'Something went wrong.';
+      console.error('Password update error:', e);
+      errEl.style.display = '';
+      errEl.style.background = 'var(--red-pale)';
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = e.message || 'Something went wrong.';
       btn.disabled = false; btn.textContent = 'Update Password';
     }
   }
-
-  // ── Check for password recovery token in URL ──
-  function checkForRecoveryToken() {
-    const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
-      // User clicked a password reset link — show reset form
-      document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('authPage').style.display = 'flex';
-      document.getElementById('authMainView').style.display = 'none';
-      document.getElementById('authResetView').style.display = '';
-    }
-  }
-  checkForRecoveryToken();
 
   async function handleLogout() {
     await sb.auth.signOut();
@@ -5817,17 +5895,6 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       initInProgress = true;
       await initApp(session);
       initInProgress = false;
-    } else if (event === 'PASSWORD_RECOVERY') {
-      // User clicked password reset link in email
-      currentUser = session.user;
-      document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('appShell').style.display = 'none';
-      document.getElementById('onboardingPage').style.display = 'none';
-      document.getElementById('authPage').style.display = 'flex';
-      document.getElementById('authMainView').style.display = 'none';
-      document.getElementById('authConfirmView').style.display = 'none';
-      document.getElementById('authForgotView').style.display = 'none';
-      document.getElementById('authResetView').style.display = '';
     } else if (event === 'SIGNED_OUT') {
       appInitialized = false;
       initInProgress = false;
