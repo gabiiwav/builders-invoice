@@ -2685,7 +2685,7 @@
   let _profileCache = null;
 
   // EmailJS
-  emailjs.init('PcnA2CmC9QK_bs_bw');
+  try { emailjs.init('PcnA2CmC9QK_bs_bw'); } catch(e) { console.warn('EmailJS not loaded:', e); }
 
   // ══════════════════════════════════
   //  SHARED DOCUMENT VIEWER
@@ -3746,9 +3746,9 @@
     reader.onload = (e) => {
       bizLogoData = e.target.result;
       const preview = document.getElementById('logoPreview');
-      preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`;
-      preview.classList.add('has-logo');
-      document.getElementById('logoRemoveBtn').style.display = 'inline';
+      if (preview) { preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`; preview.classList.add('has-logo'); }
+      const rmBtn = document.getElementById('logoRemoveBtn');
+      if (rmBtn) rmBtn.style.display = 'inline';
     };
     reader.readAsDataURL(file);
   }
@@ -3756,19 +3756,18 @@
   function removeLogo() {
     bizLogoData = null;
     const preview = document.getElementById('logoPreview');
-    preview.innerHTML = `
-      <input type="file" id="logoInput" accept="image/*" hidden onchange="handleLogo(this.files)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-      </svg>`;
-    preview.classList.remove('has-logo');
-    document.getElementById('logoRemoveBtn').style.display = 'none';
+    if (preview) {
+      preview.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+      preview.classList.remove('has-logo');
+    }
+    const rmBtn = document.getElementById('logoRemoveBtn');
+    if (rmBtn) rmBtn.style.display = 'none';
   }
 
   // Make the label trigger the file input even after logo is set
-  document.getElementById('logoPreview').addEventListener('click', function() {
+  const _logoPreview = document.getElementById('logoPreview');
+  if (_logoPreview) _logoPreview.addEventListener('click', function() {
     if (bizLogoData) {
-      // If logo exists, clicking the preview should allow re-upload
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
@@ -4359,9 +4358,8 @@
     // Logo already loaded from form fields or settings
     if (bizLogoData) {
       const preview = document.getElementById('logoPreview');
-      preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`;
-      preview.classList.add('has-logo');
-      document.getElementById('logoRemoveBtn').style.display = 'inline';
+      if (preview) { preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`; preview.classList.add('has-logo'); }
+      const _rmBtn = document.getElementById('logoRemoveBtn'); if (_rmBtn) _rmBtn.style.display = 'inline';
     }
 
     // Tax
@@ -4425,9 +4423,8 @@
       if (biz.biz_logo_url) {
         bizLogoData = biz.biz_logo_url;
         const preview = document.getElementById('logoPreview');
-        preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`;
-        preview.classList.add('has-logo');
-        document.getElementById('logoRemoveBtn').style.display = 'inline';
+        if (preview) { preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`; preview.classList.add('has-logo'); }
+        const _rmBtn = document.getElementById('logoRemoveBtn'); if (_rmBtn) _rmBtn.style.display = 'inline';
       }
       document.getElementById('estimateNum').value = generateQuoteNum();
     } catch(e) { console.warn('Auto-fill error:', e); }
@@ -4547,9 +4544,8 @@
     // Logo already loaded from form fields or settings
     if (bizLogoData) {
       const preview = document.getElementById('logoPreview');
-      preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`;
-      preview.classList.add('has-logo');
-      document.getElementById('logoRemoveBtn').style.display = 'inline';
+      if (preview) { preview.innerHTML = `<img src="${bizLogoData}" alt="Logo">`; preview.classList.add('has-logo'); }
+      const _rmBtn = document.getElementById('logoRemoveBtn'); if (_rmBtn) _rmBtn.style.display = 'inline';
     }
 
     if (q.taxEnabled && !taxEnabled) {
