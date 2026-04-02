@@ -506,7 +506,7 @@
 
   .line-item-row {
     display: grid;
-    grid-template-columns: 2.5fr 0.5fr 1.1fr 1fr 1fr 40px;
+    grid-template-columns: 2.5fr 0.5fr 1.1fr 1fr 1fr 32px 40px;
     gap: 12px;
     padding: 12px 24px;
     border-bottom: 1px solid var(--border-soft);
@@ -594,11 +594,20 @@
     font-size: 18px;
   }
   .line-remove:hover { background: var(--red-pale); color: var(--red); }
-  .line-note-toggle { font-size:11px; color:var(--gray); cursor:pointer; padding:2px 0; margin-top:2px; display:inline-block; }
-  .line-note-toggle:hover { color:var(--amber); }
-  .line-note-input { width:100%; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-family:var(--font-body); font-size:12px; color:var(--ink); background:var(--canvas); outline:none; margin-top:4px; resize:none; min-height:28px; line-height:1.4; }
-  .line-note-input:focus { border-color:var(--amber); background:var(--white); }
-  .line-note-input::placeholder { color:#B0ACA6; }
+  .line-note-btn {
+    background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px;
+    opacity: 0.35; transition: opacity 0.15s; border-radius: 4px; flex-shrink: 0;
+  }
+  .line-note-btn:hover { opacity: 1; background: var(--amber-pale); }
+  .line-note-btn.active { opacity: 1; }
+  .line-note-row { grid-column: 1 / -1; padding: 0 8px 8px 8px; }
+  .line-note-input {
+    width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-family: var(--font-body); font-size: 12px; color: var(--ink); background: var(--canvas);
+    outline: none; line-height: 1.4;
+  }
+  .line-note-input:focus { border-color: var(--amber); background: var(--white); }
+  .line-note-input::placeholder { color: #B0ACA6; }
 
   .line-items-footer {
     padding: 12px 24px;
@@ -3581,8 +3590,6 @@
     row.innerHTML = `
       <div class="line-desc-wrap">
         <input type="text" placeholder="Type or pick from suggestions…" value="${description ? escapeHtml(description) : ''}">
-        <span class="line-note-toggle" onclick="toggleLineNote(this)">+ note</span>
-        <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…" style="display:none;">
       </div>
       <select class="unit-select" onchange="updateUnit(this)">
         ${optionsHtml}
@@ -3593,7 +3600,11 @@
       </div>
       <input type="number" placeholder="0.00" value="" min="0" step="0.01" oninput="syncToAccordion(this)">
       <div class="line-total">$0.00</div>
+      <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
       <button class="line-remove" onclick="removeLine(this)" title="Remove">×</button>
+      <div class="line-note-row" style="display:none;">
+        <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…">
+      </div>
     `;
     body.appendChild(row);
 
@@ -3638,15 +3649,17 @@
   }
 
   function toggleLineNote(el) {
-    const noteInput = el.parentElement.querySelector('.line-note-input');
-    if (noteInput.style.display === 'none') {
-      noteInput.style.display = '';
+    const row = el.closest('.line-item-row');
+    const noteRow = row.querySelector('.line-note-row');
+    const noteInput = row.querySelector('.line-note-input');
+    if (noteRow.style.display === 'none') {
+      noteRow.style.display = '';
       noteInput.focus();
-      el.textContent = '− note';
+      el.classList.add('active');
     } else {
-      noteInput.style.display = 'none';
+      noteRow.style.display = 'none';
       noteInput.value = '';
-      el.textContent = '+ note';
+      el.classList.remove('active');
     }
   }
 
@@ -5145,10 +5158,12 @@
         row.querySelectorAll('input[type="number"]')[0].value = item.qty;
         row.querySelectorAll('input[type="number"]')[1].value = item.rate;
         if (item.note) {
+          const noteRow = row.querySelector('.line-note-row');
           const noteInput = row.querySelector('.line-note-input');
-          const noteToggle = row.querySelector('.line-note-toggle');
-          if (noteInput) { noteInput.value = item.note; noteInput.style.display = ''; }
-          if (noteToggle) noteToggle.textContent = '− note';
+          const noteBtn = row.querySelector('.line-note-btn');
+          if (noteRow) noteRow.style.display = '';
+          if (noteInput) noteInput.value = item.note;
+          if (noteBtn) noteBtn.classList.add('active');
         }
       });
     }
@@ -5752,8 +5767,6 @@
     row.innerHTML = `
       <div class="line-desc-wrap">
         <input type="text" placeholder="Description" value="${desc ? escapeHtml(desc) : ''}">
-        <span class="line-note-toggle" onclick="toggleLineNote(this)">+ note</span>
-        <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…" style="display:none;">
       </div>
       <select class="unit-select" onchange="updateInvUnit(this)">${unitOptions.map(u => `<option value="${u}"${u===unitVal?' selected':''}>${u}</option>`).join('')}</select>
       <div class="qty-wrap">
@@ -5762,7 +5775,11 @@
       </div>
       <input type="number" placeholder="0.00" value="" min="0" step="0.01" oninput="syncInvToAccordion(this)">
       <div class="line-total">$0.00</div>
+      <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
       <button class="line-remove" onclick="removeInvLine(this)" title="Remove">×</button>
+      <div class="line-note-row" style="display:none;">
+        <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…">
+      </div>
     `;
     body.appendChild(row);
   }
@@ -5923,10 +5940,12 @@
         row.querySelectorAll('input[type="number"]')[0].value = item.qty;
         row.querySelectorAll('input[type="number"]')[1].value = item.rate;
         if (item.note) {
+          const noteRow = row.querySelector('.line-note-row');
           const noteInput = row.querySelector('.line-note-input');
-          const noteToggle = row.querySelector('.line-note-toggle');
-          if (noteInput) { noteInput.value = item.note; noteInput.style.display = ''; }
-          if (noteToggle) noteToggle.textContent = '− note';
+          const noteBtn = row.querySelector('.line-note-btn');
+          if (noteRow) noteRow.style.display = '';
+          if (noteInput) noteInput.value = item.note;
+          if (noteBtn) noteBtn.classList.add('active');
         }
       });
     } else {
