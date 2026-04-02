@@ -594,10 +594,6 @@
     font-size: 18px;
   }
   .line-remove:hover { background: var(--red-pale); color: var(--red); }
-  #catalogToggle.open, #invCatalogToggle.open { max-height:3000px; }
-  #catalogToggle.open ~ div #catalogChevron,
-  .catalog-open #catalogChevron,
-  .catalog-open #invCatalogChevron { transform: rotate(180deg); }
   .line-note-btn {
     background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px;
     opacity: 0.35; transition: opacity 0.15s; border-radius: 4px; flex-shrink: 0;
@@ -2094,39 +2090,8 @@
         </div>
       </div>
 
-      <!-- Items Table (Primary) -->
-      <div class="card card-line-items">
-        <div class="card-header">
-          <span class="card-label">Items</span>
-          <button class="btn btn-primary btn-sm" onclick="addLine()">+ Add Line</button>
-        </div>
-        <div class="line-items-header">
-          <span>Description</span>
-          <span>Unit</span>
-          <span>Qty</span>
-          <span>Rate</span>
-          <span style="text-align:right;">Amount</span>
-          <span></span>
-          <span></span>
-        </div>
-        <div id="lineItemsBody"></div>
-        <div class="line-items-footer">
-          <button class="btn btn-ghost btn-sm" onclick="addLine()" style="width:100%;justify-content:center;">+ Add another line</button>
-        </div>
-      </div>
-
-      <!-- Item Catalog (Optional) -->
-      <div style="border:1.5px dashed var(--border);border-radius:10px;overflow:visible;">
-        <div onclick="toggleCatalog('catalogToggle','catalogChevron')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:13px;font-weight:600;color:var(--gray);">⚡ Quick Add from Catalog</span>
-            <span style="font-size:11px;color:var(--gray);font-weight:400;opacity:0.6;">optional</span>
-          </div>
-          <svg style="width:16px;height:16px;color:var(--gray);transition:transform 0.2s;" id="catalogChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div id="catalogToggle" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease;">
-          <div style="padding:12px 16px 16px;">
-            <div id="categorySections">
+      <!-- ═══ CATEGORY ACCORDIONS ═══ -->
+      <div id="categorySections">
 
         <!-- 🏗️ Exterior Work -->
         <div class="cat-section" data-cat="exterior">
@@ -2219,7 +2184,25 @@
         </div>
 
       </div>
-          </div>
+
+      <!-- Items Table -->
+      <div class="card card-line-items">
+        <div class="card-header">
+          <span class="card-label">Items</span>
+          <button class="btn btn-primary btn-sm" onclick="addLine()">+ Add Line</button>
+        </div>
+        <div class="line-items-header">
+          <span>Description</span>
+          <span>Unit</span>
+          <span>Qty</span>
+          <span>Rate</span>
+          <span style="text-align:right;">Amount</span>
+          <span></span>
+          <span></span>
+        </div>
+        <div id="lineItemsBody"></div>
+        <div class="line-items-footer">
+          <button class="btn btn-ghost btn-sm" onclick="addLine()" style="width:100%;justify-content:center;">+ Add another line</button>
         </div>
       </div>
 
@@ -2602,33 +2585,8 @@
           </div>
         </div>
 
-        <!-- Line Items (Primary) -->
-        <div class="card card-line-items">
-          <div class="card-header">
-            <span class="card-label">Items</span>
-            <button class="btn btn-primary btn-sm" onclick="addInvLine()">+ Add Line</button>
-          </div>
-          <div class="line-items-header">
-            <span>Description</span><span>Unit</span><span>Qty</span><span>Rate</span><span style="text-align:right">Amount</span><span></span><span></span>
-          </div>
-          <div id="invLineItemsBody"></div>
-          <div class="line-items-footer">
-            <button class="btn btn-ghost btn-sm" onclick="addInvLine()" style="width:100%;justify-content:center;">+ Add another line</button>
-          </div>
-        </div>
-
-        <!-- Item Catalog (Optional) -->
-        <div style="border:1.5px dashed var(--border);border-radius:10px;overflow:visible;">
-          <div onclick="toggleCatalog('invCatalogToggle','invCatalogChevron')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:13px;font-weight:600;color:var(--gray);">⚡ Quick Add from Catalog</span>
-              <span style="font-size:11px;color:var(--gray);font-weight:400;opacity:0.6;">optional</span>
-            </div>
-            <svg style="width:16px;height:16px;color:var(--gray);transition:transform 0.2s;" id="invCatalogChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div id="invCatalogToggle" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease;">
-            <div style="padding:12px 16px 16px;">
-              <div id="invCategorySections" class="inv-accordions">
+        <!-- Category Accordions -->
+        <div id="invCategorySections" class="inv-accordions">
 
           <div class="cat-section" data-cat="inv-exterior">
             <div class="cat-header" onclick="toggleCat(this)">
@@ -2692,7 +2650,18 @@
 
         </div>
 
-            </div>
+        <!-- Line Items -->
+        <div class="card card-line-items">
+          <div class="card-header">
+            <span class="card-label">Items</span>
+            <button class="btn btn-primary btn-sm" onclick="addInvLine()">+ Add Line</button>
+          </div>
+          <div class="line-items-header">
+            <span>Description</span><span>Unit</span><span>Qty</span><span>Rate</span><span style="text-align:right">Amount</span><span></span><span></span>
+          </div>
+          <div id="invLineItemsBody"></div>
+          <div class="line-items-footer">
+            <button class="btn btn-ghost btn-sm" onclick="addInvLine()" style="width:100%;justify-content:center;">+ Add another line</button>
           </div>
         </div>
 
@@ -3539,15 +3508,6 @@
   // ══════════════════════════════════
   //  ACCORDION TOGGLE
   // ══════════════════════════════════
-  function toggleCatalog(toggleId, chevronId) {
-    const toggle = document.getElementById(toggleId);
-    const chevron = document.getElementById(chevronId);
-    toggle.classList.toggle('open');
-    if (chevron) {
-      chevron.style.transform = toggle.classList.contains('open') ? 'rotate(180deg)' : '';
-    }
-  }
-
   function toggleCat(header) {
     header.closest('.cat-section').classList.toggle('open');
   }
