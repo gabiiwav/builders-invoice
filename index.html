@@ -2247,12 +2247,11 @@
             </div>
 
             <button class="totals-send-btn" onclick="sendQuote()">Send Quote →</button>
-            <button class="totals-pdf-btn" onclick="generatePDF()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              Save as PDF
-            </button>
-            <button class="totals-draft-btn" onclick="saveDraft()">Save Draft</button>
-            <button class="totals-draft-btn" onclick="convertToInvoice()" style="margin-top:4px;border-color:var(--amber);color:var(--amber);">Convert to Invoice →</button>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+              <button class="totals-draft-btn" onclick="saveDraft()">Save Draft</button>
+              <button class="totals-draft-btn" onclick="generatePDF()">Save as PDF</button>
+            </div>
+            <button onclick="convertToInvoice()" style="display:block;width:100%;margin-top:12px;padding:8px;background:none;border:none;color:var(--amber);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;text-align:center;opacity:0.8;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Convert to Invoice →</button>
 
             <div class="totals-meta">
               <div class="totals-meta-row">
@@ -2689,13 +2688,12 @@
                 <span class="totals-grand-label">Total</span>
                 <span class="totals-grand-value" id="invTotalDisplay">$0.00</span>
               </div>
-              <button class="totals-send-btn" onclick="saveInvoiceAndReturn()">Save Invoice</button>
-              <button class="totals-draft-btn" onclick="sendInvoice()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);">Send Invoice ✉</button>
-              <button class="totals-draft-btn" onclick="markInvPaid()" id="invMarkPaidBtn">Mark as Paid ✓</button>
-              <button class="totals-pdf-btn" onclick="generateInvPDF()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Save as PDF
-              </button>
+              <button class="totals-send-btn" onclick="sendInvoice()">Send Invoice ✉</button>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <button class="totals-draft-btn" onclick="saveInvoiceAndReturn()">Save</button>
+                <button class="totals-draft-btn" onclick="generateInvPDF()">Save as PDF</button>
+              </div>
+              <button onclick="markInvPaid()" id="invMarkPaidBtn" style="display:block;width:100%;margin-top:12px;padding:8px;background:none;border:none;color:var(--green);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;text-align:center;opacity:0.8;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Mark as Paid ✓</button>
               <div class="totals-meta" style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);">
                 <div class="totals-meta-row"><span class="totals-meta-label">Invoice</span><span class="totals-meta-value" id="invSidebarNum">INV-0001</span></div>
                 <div class="totals-meta-row"><span class="totals-meta-label">From Quote</span><span class="totals-meta-value" id="invFromQuote">—</span></div>
@@ -5867,7 +5865,7 @@
       document.getElementById('invBadge').textContent = 'Unpaid';
       document.getElementById('invBadge').style.background = 'var(--amber-pale)';
       document.getElementById('invBadge').style.color = 'var(--amber-deep)';
-      document.getElementById('invMarkPaidBtn').style.display = '';
+      document.getElementById('invMarkPaidBtn').style.display = 'block';
       try { calcInvTotals(); } catch(e) {}
     } catch(e) { console.error('newInvoice error:', e); }
 
@@ -5960,7 +5958,7 @@
     } else {
       document.getElementById('invBadge').style.background = s === 'Overdue' ? 'var(--red-pale)' : 'var(--amber-pale)';
       document.getElementById('invBadge').style.color = s === 'Overdue' ? 'var(--red)' : 'var(--amber-deep)';
-      document.getElementById('invMarkPaidBtn').style.display = '';
+      document.getElementById('invMarkPaidBtn').style.display = 'block';
     }
 
     document.getElementById('invPageTitle').textContent = 'Edit Invoice';
@@ -6068,7 +6066,7 @@
     const name = document.getElementById('invClientName').value.trim();
     const email = document.getElementById('invClientEmail').value.trim();
 
-    const sendBtn = document.querySelector('#page-invoice-edit .totals-draft-btn');
+    const sendBtn = document.querySelector('#page-invoice-edit .totals-send-btn');
     const origText = sendBtn.textContent;
     sendBtn.textContent = 'Sending…';
     sendBtn.disabled = true;
