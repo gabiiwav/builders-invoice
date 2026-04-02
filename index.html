@@ -594,6 +594,11 @@
     font-size: 18px;
   }
   .line-remove:hover { background: var(--red-pale); color: var(--red); }
+  .line-note-toggle { font-size:11px; color:var(--gray); cursor:pointer; padding:2px 0; margin-top:2px; display:inline-block; }
+  .line-note-toggle:hover { color:var(--amber); }
+  .line-note-input { width:100%; padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-family:var(--font-body); font-size:12px; color:var(--ink); background:var(--canvas); outline:none; margin-top:4px; resize:none; min-height:28px; line-height:1.4; }
+  .line-note-input:focus { border-color:var(--amber); background:var(--white); }
+  .line-note-input::placeholder { color:#B0ACA6; }
 
   .line-items-footer {
     padding: 12px 24px;
@@ -3319,6 +3324,7 @@
         rate: parseFloat(item.rate) || 0,
         amount: (parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0),
         source_name: item.source || null,
+        note: item.note || '',
       }));
       await sb.from('quote_items').insert(itemRows);
     }
@@ -3389,6 +3395,7 @@
         rate: parseFloat(item.rate) || 0,
         amount: (parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0),
         source_name: item.source || null,
+        note: item.note || '',
       }));
       await sb.from('invoice_items').insert(itemRows);
     }
@@ -3443,7 +3450,7 @@
       bizAddress: q.biz_address, bizLicense: q.biz_license, notes: q.notes,
       taxEnabled: q.tax_enabled, taxRate: q.tax_rate, subtotal: '$' + (q.subtotal||0).toFixed(2),
       total: '$' + (q.total||0).toFixed(2), updatedAt: new Date(q.updated_at).getTime(),
-      items: (q.items||[]).map(i => ({ desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, source: i.source_name || '' }))
+      items: (q.items||[]).map(i => ({ desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, note: i.note || '', source: i.source_name || '' }))
     }));
     return _quotesCache;
   }
@@ -3459,7 +3466,7 @@
       taxEnabled: inv.tax_enabled, taxRate: inv.tax_rate, subtotal: '$' + (inv.subtotal||0).toFixed(2),
       total: '$' + (inv.total||0).toFixed(2), fromQuoteId: inv.from_quote_id,
       fromQuoteNum: inv.from_quote_num, updatedAt: new Date(inv.updated_at).getTime(),
-      items: (inv.items||[]).map(i => ({ desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, source: i.source_name || '' }))
+      items: (inv.items||[]).map(i => ({ desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, note: i.note || '', source: i.source_name || '' }))
     }));
     return _invoicesCache;
   }
@@ -3574,6 +3581,8 @@
     row.innerHTML = `
       <div class="line-desc-wrap">
         <input type="text" placeholder="Type or pick from suggestions…" value="${description ? escapeHtml(description) : ''}">
+        <span class="line-note-toggle" onclick="toggleLineNote(this)">+ note</span>
+        <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…" style="display:none;">
       </div>
       <select class="unit-select" onchange="updateUnit(this)">
         ${optionsHtml}
@@ -3626,6 +3635,19 @@
         row.remove();
       }
     });
+  }
+
+  function toggleLineNote(el) {
+    const noteInput = el.parentElement.querySelector('.line-note-input');
+    if (noteInput.style.display === 'none') {
+      noteInput.style.display = '';
+      noteInput.focus();
+      el.textContent = '− note';
+    } else {
+      noteInput.style.display = 'none';
+      noteInput.value = '';
+      el.textContent = '+ note';
+    }
   }
 
   function updateUnit(select) {
@@ -4092,14 +4114,18 @@
       const qty = parseFloat(numInputs[0]?.value) || 0;
       const rate = parseFloat(numInputs[1]?.value) || 0;
       const amount = qty * rate;
+      const note = row.querySelector('.line-note-input')?.value || '';
       lineItemsHtml += `
         <tr>
-          <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-size:13px;color:#1C1C1E;">${escapeHtml(desc)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-size:13px;color:#6B7280;text-align:center;">${escapeHtml(unit)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:center;">${qty}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${rate.toFixed(2)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
+          <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#1C1C1E;">${escapeHtml(desc)}</td>
+          <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#6B7280;text-align:center;">${escapeHtml(unit)}</td>
+          <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:center;">${qty}</td>
+          <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${rate.toFixed(2)}</td>
+          <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
         </tr>`;
+      if (note) {
+        lineItemsHtml += `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>`;
+      }
     });
 
     // Gather attachments
@@ -4271,7 +4297,8 @@
       const inputs = row.querySelectorAll('input[type="number"]');
       const qty = inputs[0]?.value || '';
       const rate = inputs[1]?.value || '';
-      if (desc || qty || rate) items.push({ desc, unit, qty, rate, source: row.dataset.sourceName || '' });
+      const note = row.querySelector('.line-note-input')?.value || '';
+      if (desc || qty || rate) items.push({ desc, unit, qty, rate, note, source: row.dataset.sourceName || '' });
     });
 
     // Collect accordion checked items (for restoring state)
@@ -4540,8 +4567,12 @@
       const inputs = row.querySelectorAll('input[type="number"]');
       const qty = parseFloat(inputs[0]?.value) || 0;
       const rate = parseFloat(inputs[1]?.value) || 0;
+      const note = row.querySelector('.line-note-input')?.value || '';
       const amt = qty * rate;
-      itemsHtml += `<tr><td style="padding:8px 10px;border-bottom:1px solid #E0DBD4;font-size:13px;">${escapeHtml(desc)}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
+      itemsHtml += `<tr><td style="padding:8px 10px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;">${escapeHtml(desc)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
+      if (note) {
+        itemsHtml += `<tr><td colspan="5" style="padding:2px 10px 8px 24px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>`;
+      }
     });
 
     // Gather photos
@@ -5113,6 +5144,12 @@
         if (item.source) row.dataset.sourceName = item.source;
         row.querySelectorAll('input[type="number"]')[0].value = item.qty;
         row.querySelectorAll('input[type="number"]')[1].value = item.rate;
+        if (item.note) {
+          const noteInput = row.querySelector('.line-note-input');
+          const noteToggle = row.querySelector('.line-note-toggle');
+          if (noteInput) { noteInput.value = item.note; noteInput.style.display = ''; }
+          if (noteToggle) noteToggle.textContent = '− note';
+        }
       });
     }
 
@@ -5269,6 +5306,7 @@
       unit: i.unit || 'each',
       qty: i.qty || 0,
       rate: i.rate || 0,
+      note: i.note || '',
       source: i.source_name || i.source || ''
     }));
 
@@ -5712,7 +5750,11 @@
     const unitVal = unit || 'each';
     const unitOptions = ['each','hr','sqft','lnft','sq','job'];
     row.innerHTML = `
-      <div class="line-desc-wrap"><input type="text" placeholder="Description" value="${desc ? escapeHtml(desc) : ''}"></div>
+      <div class="line-desc-wrap">
+        <input type="text" placeholder="Description" value="${desc ? escapeHtml(desc) : ''}">
+        <span class="line-note-toggle" onclick="toggleLineNote(this)">+ note</span>
+        <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…" style="display:none;">
+      </div>
       <select class="unit-select" onchange="updateInvUnit(this)">${unitOptions.map(u => `<option value="${u}"${u===unitVal?' selected':''}>${u}</option>`).join('')}</select>
       <div class="qty-wrap">
         <input type="number" placeholder="1" value="" min="0" step="0.01" oninput="syncInvToAccordion(this)">
@@ -5880,6 +5922,12 @@
         if (item.source) row.dataset.sourceName = item.source;
         row.querySelectorAll('input[type="number"]')[0].value = item.qty;
         row.querySelectorAll('input[type="number"]')[1].value = item.rate;
+        if (item.note) {
+          const noteInput = row.querySelector('.line-note-input');
+          const noteToggle = row.querySelector('.line-note-toggle');
+          if (noteInput) { noteInput.value = item.note; noteInput.style.display = ''; }
+          if (noteToggle) noteToggle.textContent = '− note';
+        }
       });
     } else {
       addInvLine();
@@ -5911,7 +5959,8 @@
       const desc = row.querySelector('input[type="text"]')?.value || '';
       const unit = row.querySelector('.unit-select')?.value || 'each';
       const inputs = row.querySelectorAll('input[type="number"]');
-      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', source: row.dataset.sourceName || '' });
+      const note = row.querySelector('.line-note-input')?.value || '';
+      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', note, source: row.dataset.sourceName || '' });
     });
 
     const checkedItems = [];
@@ -5972,7 +6021,8 @@
       const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
       const unit = row.querySelector('.unit-select')?.value || 'each';
       const inputs = row.querySelectorAll('input[type="number"]');
-      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', source: row.dataset.sourceName || '' });
+      const note = row.querySelector('.line-note-input')?.value || '';
+      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', note, source: row.dataset.sourceName || '' });
     });
     const invId = await dbSaveInvoice(data, items);
     currentInvId = invId;
@@ -6119,8 +6169,12 @@
       const inputs = row.querySelectorAll('input[type="number"]');
       const qty = parseFloat(inputs[0]?.value) || 0;
       const rate = parseFloat(inputs[1]?.value) || 0;
+      const note = row.querySelector('.line-note-input')?.value || '';
       const amt = qty * rate;
-      itemsHtml += `<tr><td style="padding:8px 10px;border-bottom:1px solid #E0DBD4;font-size:13px;">${escapeHtml(desc)}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
+      itemsHtml += `<tr><td style="padding:8px 10px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;">${escapeHtml(desc)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
+      if (note) {
+        itemsHtml += `<tr><td colspan="5" style="padding:2px 10px 8px 24px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>`;
+      }
     });
 
     // Gather invoice photos
@@ -6177,7 +6231,8 @@
       const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
       const unit = row.querySelector('.unit-select')?.value || 'each';
       const inputs = row.querySelectorAll('input[type="number"]');
-      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', source: row.dataset.sourceName || '' });
+      const note = row.querySelector('.line-note-input')?.value || '';
+      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', note, source: row.dataset.sourceName || '' });
     });
     const invId = await dbSaveInvoice(data, items);
     currentInvId = invId;
@@ -6237,13 +6292,17 @@
       const qty = parseFloat(numInputs[0]?.value) || 0;
       const rate = parseFloat(numInputs[1]?.value) || 0;
       const amount = qty * rate;
+      const note = row.querySelector('.line-note-input')?.value || '';
       lineItemsHtml += `<tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-size:13px;color:#1C1C1E;">${escapeHtml(desc)}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-size:13px;color:#6B7280;text-align:center;">${escapeHtml(unit)}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:center;">${qty}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${rate.toFixed(2)}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #E0DBD4;font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
+        <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#1C1C1E;">${escapeHtml(desc)}</td>
+        <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#6B7280;text-align:center;">${escapeHtml(unit)}</td>
+        <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:center;">${qty}</td>
+        <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${rate.toFixed(2)}</td>
+        <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
       </tr>`;
+      if (note) {
+        lineItemsHtml += `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>`;
+      }
     });
 
     // Payment methods from cached settings
