@@ -1440,6 +1440,11 @@
   /* ══════════════════════════════════
      TOAST & SUCCESS OVERLAY
   ══════════════════════════════════ */
+  /* Validation */
+  .field-error { border-color: var(--red) !important; animation: shake 0.3s ease; }
+  .field-error-msg { font-size: 11px; color: var(--red); margin-top: 4px; font-weight: 500; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
   .toast {
     position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
     background: var(--ink); color: var(--white); padding: 14px 28px; border-radius: 12px;
@@ -3381,7 +3386,6 @@
   // ══════════════════════════════════
   async function uploadDocumentHtml(htmlContent, docType) {
     if (!currentUser) { console.error('No user'); return null; }
-    console.log('Upload doc: type=' + docType + ', size=' + (htmlContent.length / 1024).toFixed(0) + 'KB, hasImages=' + htmlContent.includes('data:image'));
     try {
       const { data, error } = await sb.from('shared_documents').insert({
         user_id: currentUser.id,
@@ -3390,7 +3394,6 @@
       }).select('id').single();
       if (error) { console.error('Doc save error:', error); return null; }
       const url = window.location.origin + window.location.pathname + '?doc=' + data.id;
-      console.log('Document URL:', url);
       return url;
     } catch(e) {
       console.error('Doc upload error:', e);
@@ -4193,7 +4196,12 @@
 
   function generateQuoteNum() {
     const quotes = getQuotes();
-    return 'QT-' + String(quotes.length + 1).padStart(4, '0');
+    let max = 0;
+    quotes.forEach(q => {
+      const m = (q.quoteNum || '').match(/QT-(\d+)/);
+      if (m) max = Math.max(max, parseInt(m[1]));
+    });
+    return 'QT-' + String(max + 1).padStart(4, '0');
   }
 
   function collectQuoteData(status) {
@@ -4286,7 +4294,109 @@
     }, 1000);
   }
 
+  // ══════════════════════════════════
+  //  FORM VALIDATION
+  // ══════════════════════════════════
+  function clearValidation() {
+    document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+    document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
+  }
+
+  function markInvalid(el, msg) {
+    el.classList.add('field-error');
+    setTimeout(() => el.classList.remove('field-error'), 3000);
+    if (msg) {
+      const existing = el.parentElement.querySelector('.field-error-msg');
+      if (existing) existing.remove();
+      const errDiv = document.createElement('div');
+      errDiv.className = 'field-error-msg';
+      errDiv.textContent = msg;
+      el.parentElement.appendChild(errDiv);
+      setTimeout(() => errDiv.remove(), 3000);
+    }
+  }
+
+  function validateQuoteForm() {
+    clearValidation();
+    let valid = true;
+    let firstBad = null;
+
+    const clientName = document.getElementById('clientName');
+    const clientEmail = document.getElementById('clientEmail');
+    const jobDesc = document.getElementById('jobDesc');
+
+    if (!clientName.value.trim()) {
+      markInvalid(clientName, 'Client name is required');
+      valid = false; if (!firstBad) firstBad = clientName;
+    }
+    if (!clientEmail.value.trim()) {
+      markInvalid(clientEmail, 'Client email is required');
+      valid = false; if (!firstBad) firstBad = clientEmail;
+    }
+    if (!jobDesc.value.trim()) {
+      markInvalid(jobDesc, 'Job description is required');
+      valid = false; if (!firstBad) firstBad = jobDesc;
+    }
+
+    // Check for at least one line item with qty and rate
+    let hasValidItem = false;
+    document.querySelectorAll('#lineItemsBody .line-item-row').forEach(row => {
+      const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
+      const inputs = row.querySelectorAll('input[type="number"]');
+      const qty = parseFloat(inputs[0]?.value) || 0;
+      const rate = parseFloat(inputs[1]?.value) || 0;
+      if (desc && qty > 0 && rate > 0) hasValidItem = true;
+    });
+    if (!hasValidItem) {
+      showToast('Add at least one line item with qty and rate');
+      valid = false;
+    }
+
+    if (firstBad) { firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' }); firstBad.focus(); }
+    return valid;
+  }
+
+  function validateInvoiceForm() {
+    clearValidation();
+    let valid = true;
+    let firstBad = null;
+
+    const clientName = document.getElementById('invClientName');
+    const clientEmail = document.getElementById('invClientEmail');
+    const jobDesc = document.getElementById('invDesc');
+
+    if (!clientName.value.trim()) {
+      markInvalid(clientName, 'Client name is required');
+      valid = false; if (!firstBad) firstBad = clientName;
+    }
+    if (!clientEmail.value.trim()) {
+      markInvalid(clientEmail, 'Client email is required');
+      valid = false; if (!firstBad) firstBad = clientEmail;
+    }
+    if (!jobDesc.value.trim()) {
+      markInvalid(jobDesc, 'Job description is required');
+      valid = false; if (!firstBad) firstBad = jobDesc;
+    }
+
+    let hasValidItem = false;
+    document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
+      const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
+      const inputs = row.querySelectorAll('input[type="number"]');
+      const qty = parseFloat(inputs[0]?.value) || 0;
+      const rate = parseFloat(inputs[1]?.value) || 0;
+      if (desc && qty > 0 && rate > 0) hasValidItem = true;
+    });
+    if (!hasValidItem) {
+      showToast('Add at least one line item with qty and rate');
+      valid = false;
+    }
+
+    if (firstBad) { firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' }); firstBad.focus(); }
+    return valid;
+  }
+
   async function saveDraft() {
+    if (!validateQuoteForm()) return;
     await saveQuote('Draft');
     showSuccessOverlay(() => {
       showPage('dashboard');
@@ -4295,20 +4405,7 @@
   }
 
   async function sendQuote() {
-    const name = document.getElementById('clientName').value.trim();
-    const email = document.getElementById('clientEmail').value.trim();
-    if (!name) {
-      document.getElementById('clientName').style.borderColor = 'var(--red)';
-      document.getElementById('clientName').focus();
-      setTimeout(() => { document.getElementById('clientName').style.borderColor = ''; }, 2000);
-      return;
-    }
-    if (!email) {
-      document.getElementById('clientEmail').style.borderColor = 'var(--red)';
-      document.getElementById('clientEmail').focus();
-      setTimeout(() => { document.getElementById('clientEmail').style.borderColor = ''; }, 2000);
-      return;
-    }
+    if (!validateQuoteForm()) return;
 
     const sendBtn = document.querySelector('.totals-send-btn');
     const origText = sendBtn.textContent;
@@ -4316,6 +4413,8 @@
     sendBtn.disabled = true;
 
     try {
+      const name = document.getElementById('clientName').value.trim();
+      const email = document.getElementById('clientEmail').value.trim();
       const quoteNum = document.getElementById('estimateNum').value || 'Quote';
       const jobDesc = document.getElementById('jobDesc').value || '';
       const total = document.getElementById('totalDisplay').textContent || '$0.00';
@@ -4390,7 +4489,6 @@
     // Gather photos
     let photosHtml = '';
     const attachments = document.querySelectorAll('.attach-item');
-    console.log('Photos found:', attachments.length);
     if (attachments.length > 0) {
       let imgs = '';
       attachments.forEach(item => {
@@ -4449,7 +4547,7 @@
       const dueD = new Date();
       dueD.setDate(dueD.getDate() + 30);
       const invoice = {
-        invoiceNum: 'INV-' + String(invoices.length + 1).padStart(4, '0'),
+        invoiceNum: generateInvNum(),
         fromQuoteId: quoteData.id,
         fromQuoteNum: quoteData.quoteNum,
         status: 'Unpaid',
@@ -5045,7 +5143,7 @@
     if (!orig) return;
     const dupe = JSON.parse(JSON.stringify(orig));
     dupe.id = null; // let Supabase generate new UUID
-    dupe.quoteNum = 'QT-' + String(quotes.length + 1).padStart(4, '0');
+    dupe.quoteNum = generateQuoteNum();
     dupe.status = 'Draft';
     const items = (orig.items || []).map(i => ({ desc: i.description || i.desc, unit: i.unit, qty: i.qty, rate: i.rate, source: i.source_name || i.source || '' }));
     await dbSaveQuote(dupe, items);
@@ -5065,7 +5163,6 @@
     const q = quotes.find(qt => qt.id === id);
     if (!q) return;
 
-    console.log('Converting quote:', q.quoteNum, 'Items:', q.items?.length, 'Sample item:', q.items?.[0]);
 
     // Mark quote as Accepted
     await sb.from('quotes').update({ status: 'Accepted' }).eq('id', id);
@@ -5079,7 +5176,7 @@
 
     const invoice = {
       id: null,
-      invoiceNum: 'INV-' + String(invoices.length + 1).padStart(4, '0'),
+      invoiceNum: generateInvNum(),
       fromQuoteId: q.id,
       fromQuoteNum: q.quoteNum,
       status: 'Unpaid',
@@ -5110,10 +5207,8 @@
       source: i.source_name || i.source || ''
     }));
 
-    console.log('Invoice items to save:', items.length, items);
 
     const invId = await dbSaveInvoice(invoice, items);
-    console.log('Saved invoice ID:', invId);
 
     if (!invId) {
       showToast('Error creating invoice');
@@ -5122,10 +5217,6 @@
 
     await refreshInvoices();
     await refreshQuotes();
-
-    // Verify items loaded
-    const savedInv = getInvoices().find(i => i.id === invId);
-    console.log('Loaded invoice items:', savedInv?.items?.length, savedInv?.items);
 
     // Open the new invoice for editing
     editInvoice(invId);
@@ -5377,7 +5468,13 @@
 
   // getInvoices/saveInvoicesToStorage — overridden by Supabase cache layer above
   function generateInvNum() {
-    return 'INV-' + String(getInvoices().length + 1).padStart(4, '0');
+    const invoices = getInvoices();
+    let max = 0;
+    invoices.forEach(inv => {
+      const m = (inv.invoiceNum || '').match(/INV-(\d+)/);
+      if (m) max = Math.max(max, parseInt(m[1]));
+    });
+    return 'INV-' + String(max + 1).padStart(4, '0');
   }
 
   // ── Invoice accordion item grids ──
@@ -5803,6 +5900,7 @@
   }
 
   async function saveInvoiceAndReturn() {
+    if (!validateInvoiceForm()) return;
     const data = collectInvoiceData();
     const items = [];
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
@@ -5834,20 +5932,10 @@
   }
 
   async function sendInvoice() {
+    if (!validateInvoiceForm()) return;
+
     const name = document.getElementById('invClientName').value.trim();
     const email = document.getElementById('invClientEmail').value.trim();
-    if (!name) {
-      document.getElementById('invClientName').style.borderColor = 'var(--red)';
-      document.getElementById('invClientName').focus();
-      setTimeout(() => { document.getElementById('invClientName').style.borderColor = ''; }, 2000);
-      return;
-    }
-    if (!email) {
-      document.getElementById('invClientEmail').style.borderColor = 'var(--red)';
-      document.getElementById('invClientEmail').focus();
-      setTimeout(() => { document.getElementById('invClientEmail').style.borderColor = ''; }, 2000);
-      return;
-    }
 
     const sendBtn = document.querySelector('#page-invoice-edit .totals-draft-btn');
     const origText = sendBtn.textContent;
@@ -5875,22 +5963,14 @@
       // Create Stripe payment link if connected
       let paymentUrl = '';
       const profile = _profileCache;
-      console.log('Stripe check:', {
-        stripe_account_id: profile?.stripe_account_id,
-        currentInvId: currentInvId,
-        totalStr: total
-      });
       
       if (profile?.stripe_account_id && currentInvId) {
         sendBtn.textContent = 'Creating payment link…';
         const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
-        console.log('Creating payment link: amount=$' + totalNum, 'account:', profile.stripe_account_id);
         if (totalNum > 0) {
           paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile.stripe_account_id) || '';
-          console.log('Payment URL result:', paymentUrl);
         }
       } else {
-        console.log('Skipping payment link — no Stripe account or no invoice ID');
         // Try refreshing profile in case it's stale
         if (!profile?.stripe_account_id) {
           const freshProfile = await dbGetProfile(true);
@@ -5899,7 +5979,6 @@
             const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
             if (totalNum > 0) {
               paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), freshProfile.stripe_account_id) || '';
-              console.log('Payment URL (after refresh):', paymentUrl);
             }
           }
         }
@@ -6345,6 +6424,23 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   //  ONBOARDING
   // ══════════════════════════════════
   function obNext(step) {
+    // Validate step 1 before moving to step 2
+    if (step === 2) {
+      clearValidation();
+      let valid = true;
+      const bizName = document.getElementById('obBizName');
+      const bizEmail = document.getElementById('obBizEmail');
+      if (!bizName.value.trim()) {
+        markInvalid(bizName, 'Business name is required');
+        valid = false;
+      }
+      if (!bizEmail.value.trim()) {
+        markInvalid(bizEmail, 'Email is required');
+        valid = false;
+      }
+      if (!valid) return;
+    }
+
     document.querySelectorAll('.onboard-step').forEach(s => s.style.display = 'none');
     document.getElementById('obStep' + step).style.display = '';
     document.querySelectorAll('.onboard-step-dots .dot').forEach((d, i) => {
@@ -6352,7 +6448,6 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       if (i < step - 1) d.classList.add('done');
       if (i === step - 1) d.classList.add('active');
     });
-    // Pre-fill email on step 1
     if (step === 1 && currentUser) {
       const emailInput = document.getElementById('obBizEmail');
       if (!emailInput.value) emailInput.value = currentUser.email || '';
@@ -6373,16 +6468,24 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
   async function finishOnboarding() {
     const bizName = document.getElementById('obBizName').value.trim();
+    const bizEmail = document.getElementById('obBizEmail').value.trim();
+
+    clearValidation();
+    let valid = true;
     if (!bizName) {
-      document.getElementById('obBizName').style.borderColor = 'var(--red)';
-      setTimeout(() => document.getElementById('obBizName').style.borderColor = '', 2000);
-      return;
+      markInvalid(document.getElementById('obBizName'), 'Business name is required');
+      valid = false;
     }
+    if (!bizEmail) {
+      markInvalid(document.getElementById('obBizEmail'), 'Email is required');
+      valid = false;
+    }
+    if (!valid) return;
 
     const profile = {
       biz_name: bizName,
       biz_phone: document.getElementById('obBizPhone').value.trim(),
-      biz_email: document.getElementById('obBizEmail').value.trim(),
+      biz_email: bizEmail,
       biz_address: document.getElementById('obBizAddress').value.trim(),
       biz_license: document.getElementById('obBizLicense').value.trim(),
       default_tax_rate: parseFloat(document.getElementById('obTaxRate').value) || 8,
