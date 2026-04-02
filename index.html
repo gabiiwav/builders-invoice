@@ -594,7 +594,6 @@
     font-size: 18px;
   }
   .line-remove:hover { background: var(--red-pale); color: var(--red); }
-  #catalogToggle.open, #invCatalogToggle.open { max-height:3000px; }
   .line-note-btn {
     background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px;
     opacity: 0.35; transition: opacity 0.15s; border-radius: 4px; flex-shrink: 0;
@@ -2091,15 +2090,8 @@
         </div>
       </div>
 
-      <!-- Items Table (Primary) -->
-      <!-- Item Catalog Toggle -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <button class="toggle-switch" id="catalogSwitch" onclick="toggleCatalog('catalogToggle','catalogSwitch')"></button>
-        <span style="font-size:13px;color:var(--gray);font-weight:500;">Show Quick Add Catalog</span>
-      </div>
-      <div id="catalogToggle" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease;">
-        <div style="padding:0 0 16px;">
-          <div id="categorySections">
+      <!-- ═══ CATEGORY ACCORDIONS ═══ -->
+      <div id="categorySections">
 
         <!-- 🏗️ Exterior Work -->
         <div class="cat-section" data-cat="exterior">
@@ -2192,9 +2184,8 @@
         </div>
 
       </div>
-          </div>
-        </div>
 
+      <!-- Items Table -->
       <div class="card card-line-items">
         <div class="card-header">
           <span class="card-label">Items</span>
@@ -2594,14 +2585,8 @@
           </div>
         </div>
 
-        <!-- Item Catalog Toggle -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-          <button class="toggle-switch" id="invCatalogSwitch" onclick="toggleCatalog('invCatalogToggle','invCatalogSwitch')"></button>
-          <span style="font-size:13px;color:var(--gray);font-weight:500;">Show Quick Add Catalog</span>
-        </div>
-        <div id="invCatalogToggle" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease;">
-          <div style="padding:0 0 16px;">
-            <div id="invCategorySections" class="inv-accordions">
+        <!-- Category Accordions -->
+        <div id="invCategorySections" class="inv-accordions">
 
           <div class="cat-section" data-cat="inv-exterior">
             <div class="cat-header" onclick="toggleCat(this)">
@@ -2665,10 +2650,7 @@
 
         </div>
 
-            </div>
-          </div>
-
-        <!-- Line Items (Primary) -->
+        <!-- Line Items -->
         <div class="card card-line-items">
           <div class="card-header">
             <span class="card-label">Items</span>
@@ -3526,13 +3508,6 @@
   // ══════════════════════════════════
   //  ACCORDION TOGGLE
   // ══════════════════════════════════
-  function toggleCatalog(toggleId, switchId) {
-    const toggle = document.getElementById(toggleId);
-    const sw = document.getElementById(switchId);
-    toggle.classList.toggle('open');
-    if (sw) sw.classList.toggle('on');
-  }
-
   function toggleCat(header) {
     header.closest('.cat-section').classList.toggle('open');
   }
