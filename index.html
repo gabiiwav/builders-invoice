@@ -1326,21 +1326,56 @@
   .status-overdue { background:var(--red-pale); color:var(--red); }
   .status-overdue::before { background:var(--red); }
 
-  .quotes-table { width:100%; background:var(--white); border-radius:12px; border:1px solid var(--border); overflow:hidden; }
-  .qt-header { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 60px; gap:8px; padding:10px 16px; background:var(--canvas-alt); border-bottom:1px solid var(--border); }
-  .qt-header span { font-size:10px; text-transform:uppercase; letter-spacing:1.5px; color:var(--gray); font-weight:600; }
-  .qt-row { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 60px; gap:8px; padding:12px 16px; border-bottom:1px solid var(--border-soft); align-items:center; cursor:pointer; transition:background 0.1s; }
-  .qt-row:last-child { border-bottom:none; }
-  .qt-row:hover { background:rgba(245,242,238,0.5); }
-  .qt-client { font-weight:600; color:var(--ink); font-size:13px; }
-  .qt-client-sub { font-size:11px; color:var(--gray); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .qt-num { font-family:var(--font-mono); font-size:11px; color:var(--gray); }
-  .qt-date { font-size:12px; color:var(--ink-muted); }
-  .qt-amount { font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--ink); text-align:right; }
-  .qt-actions { display:flex; gap:4px; justify-content:flex-end; }
-  .qt-action-btn { width:30px; height:30px; border:none; background:transparent; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--gray); transition:all 0.15s; font-size:14px; }
-  .qt-action-btn:hover { background:var(--canvas-alt); color:var(--ink); }
-  .qt-action-btn.danger:hover { background:var(--red-pale); color:var(--red); }
+  .quotes-table { width:100%; display:flex; flex-direction:column; gap:8px; }
+
+  .job-card {
+    display:flex; align-items:center; gap:16px; padding:14px 18px; background:var(--white);
+    border-radius:10px; border:1px solid var(--border); border-left:4px solid var(--gray);
+    cursor:pointer; transition:all 0.15s; position:relative;
+  }
+  .job-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.06); border-color:var(--border); }
+  .job-card.border-blue { border-left-color:#3B82F6; }
+  .job-card.border-amber { border-left-color:var(--amber); }
+  .job-card.border-green { border-left-color:var(--green); background:rgba(34,197,94,0.03); }
+  .job-card.border-red { border-left-color:var(--red); opacity:0.6; }
+  .job-card.border-gray { border-left-color:var(--gray); }
+  .job-card-info { flex:1; min-width:0; }
+  .job-card-title { font-weight:700; font-size:14px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .job-card-sub { font-size:12px; color:var(--gray); margin-top:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .job-card-sub span { white-space:nowrap; }
+  .job-card-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
+  .job-card-amount { font-family:var(--font-mono); font-size:15px; font-weight:700; color:var(--ink); white-space:nowrap; }
+  .job-card-action {
+    padding:6px 14px; border-radius:6px; font-family:var(--font-body); font-size:12px;
+    font-weight:600; cursor:pointer; border:none; transition:all 0.15s; white-space:nowrap;
+  }
+  .job-card-action.action-accept { background:var(--green-pale); color:var(--green); }
+  .job-card-action.action-accept:hover { background:var(--green); color:white; }
+  .job-card-action.action-invoice { background:var(--amber-pale); color:var(--amber-deep); }
+  .job-card-action.action-invoice:hover { background:var(--amber); color:white; }
+  .job-card-action.action-paid { background:var(--green-pale); color:var(--green); }
+  .job-card-action.action-paid:hover { background:var(--green); color:white; }
+  .job-card-action.action-edit { background:var(--canvas); color:var(--gray); }
+  .job-card-action.action-edit:hover { background:var(--ink); color:white; }
+  .job-card-more {
+    width:28px; height:28px; border:none; background:transparent; border-radius:6px;
+    cursor:pointer; font-size:16px; color:var(--gray); transition:all 0.15s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .job-card-more:hover { background:var(--canvas-alt); color:var(--ink); }
+  .job-card-menu {
+    position:absolute; right:16px; top:100%; margin-top:4px; background:var(--white);
+    border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.12);
+    z-index:20; overflow:hidden; min-width:140px;
+  }
+  .job-card-menu button {
+    display:block; width:100%; padding:10px 16px; border:none; background:none;
+    font-family:var(--font-body); font-size:13px; color:var(--ink); cursor:pointer;
+    text-align:left; transition:background 0.1s;
+  }
+  .job-card-menu button:hover { background:var(--canvas); }
+  .job-card-menu button.danger { color:var(--red); }
+  .job-card-menu button.danger:hover { background:var(--red-pale); }
 
   .quotes-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   .q-card { background:var(--white); border-radius:12px; border:1px solid var(--border); padding:18px; cursor:pointer; transition:all 0.15s; position:relative; }
@@ -1637,9 +1672,8 @@
     .line-remove { position: absolute; top: 8px; right: 8px; }
     .stats-row { grid-template-columns: 1fr 1fr; }
     .quotes-cards { grid-template-columns: 1fr; }
-    .qt-header, .qt-row { grid-template-columns: 1fr 70px 80px; gap:6px; padding:10px 12px; }
-    .qt-header span:nth-child(4),.qt-header span:nth-child(5),.qt-header span:nth-child(6),
-    .qt-row>*:nth-child(4),.qt-row>*:nth-child(5),.qt-row>*:nth-child(6) { display:none; }
+    .job-card { flex-wrap:wrap; gap:10px; }
+    .job-card-right { width:100%; justify-content:space-between; }
     .dash-container, .settings-container { padding: 24px 16px 80px; }
     .payment-grid { grid-template-columns: 1fr 1fr; }
     .ct-row { grid-template-columns: 1fr 1fr 60px; }
@@ -4802,17 +4836,17 @@
 
   function getJobStatus(quote, invoice) {
     if (invoice) {
-      if (invoice.status === 'Paid') return { label: 'Paid', class: 'status-paid', phase: 'paid' };
-      if (invoice.status === 'Overdue') return { label: 'Overdue', class: 'status-overdue', phase: 'invoiced' };
-      return { label: 'Invoice ' + (invoice.status || 'Unpaid'), class: 'status-unpaid', phase: 'invoiced' };
+      if (invoice.status === 'Paid') return { label: 'Paid', class: 'status-paid', phase: 'paid', border: 'border-green' };
+      if (invoice.status === 'Overdue') return { label: 'Overdue', class: 'status-overdue', phase: 'invoiced', border: 'border-amber' };
+      return { label: 'Invoice ' + (invoice.status || 'Unpaid'), class: 'status-unpaid', phase: 'invoiced', border: 'border-amber' };
     }
     if (quote) {
-      if (quote.status === 'Declined') return { label: 'Declined', class: 'status-declined', phase: 'declined' };
-      if (quote.status === 'Accepted') return { label: 'Accepted', class: 'status-accepted', phase: 'accepted' };
-      if (quote.status === 'Sent') return { label: 'Quote Sent', class: 'status-sent', phase: 'quoting' };
-      return { label: 'Quote Draft', class: 'status-draft', phase: 'quoting' };
+      if (quote.status === 'Declined') return { label: 'Declined', class: 'status-declined', phase: 'declined', border: 'border-red' };
+      if (quote.status === 'Accepted') return { label: 'Accepted', class: 'status-accepted', phase: 'accepted', border: 'border-blue' };
+      if (quote.status === 'Sent') return { label: 'Quote Sent', class: 'status-sent', phase: 'quoting', border: 'border-blue' };
+      return { label: 'Quote Draft', class: 'status-draft', phase: 'quoting', border: 'border-gray' };
     }
-    return { label: 'Draft', class: 'status-draft', phase: 'quoting' };
+    return { label: 'Draft', class: 'status-draft', phase: 'quoting', border: 'border-gray' };
   }
 
   function renderJobs() {
@@ -4892,34 +4926,48 @@
     document.getElementById('jobsList').innerHTML = filtered.map(j => {
       const q = j.quote;
       const inv = j.invoice;
-      const docLabel = j.invoiceNum && j.quoteNum
-        ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--gray);">${j.quoteNum} → ${j.invoiceNum}</span>`
-        : `<span style="font-family:var(--font-mono);font-size:10px;color:var(--gray);">${j.quoteNum || j.invoiceNum || ''}</span>`;
+      const docNum = j.invoiceNum && j.quoteNum
+        ? `${j.quoteNum} → ${j.invoiceNum}`
+        : (j.quoteNum || j.invoiceNum || '');
 
-      let actions = '';
+      // Determine single next-step action
+      let actionHtml = '';
       if (q && !inv) {
-        if (q.status === 'Sent') {
-          actions += `<button class="qt-action-btn" onclick="event.stopPropagation();quickStatus('${q.id}','Accepted')" title="Accept" style="color:var(--green);">✓</button>`;
-          actions += `<button class="qt-action-btn" onclick="event.stopPropagation();quickStatus('${q.id}','Declined')" title="Decline" style="color:var(--red);">✗</button>`;
+        if (q.status === 'Draft') {
+          actionHtml = `<button class="job-card-action action-edit" onclick="event.stopPropagation();editQuote('${q.id}')">Edit →</button>`;
+        } else if (q.status === 'Sent') {
+          actionHtml = `<button class="job-card-action action-accept" onclick="event.stopPropagation();quickStatus('${q.id}','Accepted')">Accept ✓</button>`;
+        } else if (q.status === 'Accepted') {
+          actionHtml = `<button class="job-card-action action-invoice" onclick="event.stopPropagation();convertToInvoiceFromDash('${q.id}')">Create Invoice →</button>`;
         }
-        if (q.status === 'Accepted') {
-          actions += `<button class="qt-action-btn" onclick="event.stopPropagation();convertToInvoiceFromDash('${q.id}')" title="Create Invoice" style="color:var(--amber);font-size:11px;">→ Invoice</button>`;
-        }
+      } else if (inv && inv.status !== 'Paid') {
+        actionHtml = `<button class="job-card-action action-paid" onclick="event.stopPropagation();quickMarkPaid('${inv.id}')">Mark Paid</button>`;
       }
-      if (inv && inv.status !== 'Paid') {
-        actions += `<button class="qt-action-btn" onclick="event.stopPropagation();quickMarkPaid('${inv.id}')" title="Mark Paid" style="color:var(--green);">💰</button>`;
-      }
-      actions += `<button class="qt-action-btn danger" onclick="event.stopPropagation();deleteJob('${q?.id||''}','${inv?.id||''}')" title="Delete">×</button>`;
 
       const onclick = inv ? `editInvoice('${inv.id}')` : (q ? `editQuote('${q.id}')` : '');
+      const jobId = `job_${q?.id || inv?.id || ''}`;
 
-      return `<div class="qt-row" onclick="${onclick}">
-        <div style="flex:2;min-width:0;"><div class="qt-client">${escapeHtml(j.title)}</div><div class="qt-client-sub">${escapeHtml(j.client)}</div></div>
-        <div style="flex:1;">${docLabel}</div>
-        <div style="flex:0.8;"><span class="status-badge ${j.status.class}">${j.status.label}</span></div>
-        <div class="qt-date" style="flex:0.7;">${formatDate(j.date)}</div>
-        <div class="qt-amount" style="flex:0.7;">${j.amount || '$0.00'}</div>
-        <div class="qt-actions" style="flex:0.8;justify-content:flex-end;">${actions}</div>
+      return `<div class="job-card ${j.status.border}" onclick="${onclick}">
+        <div class="job-card-info">
+          <div class="job-card-title">${escapeHtml(j.title)}</div>
+          <div class="job-card-sub">
+            <span>${escapeHtml(j.client)}</span>
+            <span style="font-family:var(--font-mono);font-size:10px;">${escapeHtml(docNum)}</span>
+            <span>${formatDate(j.date)}</span>
+            <span class="status-badge ${j.status.class}">${j.status.label}</span>
+          </div>
+        </div>
+        <div class="job-card-right">
+          <div class="job-card-amount">${j.amount || '$0.00'}</div>
+          ${actionHtml}
+          <button class="job-card-more" onclick="event.stopPropagation();toggleJobMenu('${jobId}')" title="More">⋯</button>
+        </div>
+        <div class="job-card-menu" id="${jobId}_menu" style="display:none;">
+          ${inv ? `<button onclick="event.stopPropagation();editInvoice('${inv.id}');closeJobMenus()">Edit Invoice</button>` : ''}
+          ${q && !inv ? `<button onclick="event.stopPropagation();editQuote('${q.id}');closeJobMenus()">Edit Quote</button>` : ''}
+          ${q && q.status === 'Sent' ? `<button onclick="event.stopPropagation();quickStatus('${q.id}','Declined');closeJobMenus()">Decline Quote</button>` : ''}
+          <button class="danger" onclick="event.stopPropagation();deleteJob('${q?.id||''}','${inv?.id||''}');closeJobMenus()">Delete</button>
+        </div>
       </div>`;
     }).join('');
   }
@@ -4930,6 +4978,24 @@
     renderJobs();
     showToast('Invoice marked as Paid');
   }
+
+  function toggleJobMenu(jobId) {
+    const menu = document.getElementById(jobId + '_menu');
+    const wasOpen = menu.style.display !== 'none';
+    closeJobMenus();
+    if (!wasOpen) menu.style.display = '';
+  }
+
+  function closeJobMenus() {
+    document.querySelectorAll('.job-card-menu').forEach(m => m.style.display = 'none');
+  }
+
+  // Close menus on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.job-card-more') && !e.target.closest('.job-card-menu')) {
+      closeJobMenus();
+    }
+  });
 
   async function deleteJob(quoteId, invoiceId) {
     if (!confirm('Delete this job?')) return;
