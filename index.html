@@ -4294,7 +4294,7 @@
   function collectQuoteData(status) {
     // Collect line items from table
     const items = [];
-    document.querySelectorAll('.line-item-row').forEach(row => {
+    document.querySelectorAll('#lineItemsBody .line-item-row').forEach(row => {
       const desc = row.querySelector('input[type="text"]')?.value || '';
       const unit = row.querySelector('.unit-select')?.value || 'each';
       const inputs = row.querySelectorAll('input[type="number"]');
@@ -4306,7 +4306,7 @@
 
     // Collect accordion checked items (for restoring state)
     const checkedItems = [];
-    document.querySelectorAll('.item-card.checked').forEach(card => {
+    document.querySelectorAll('#categorySections .item-card.checked').forEach(card => {
       checkedItems.push({
         name: card.querySelector('.item-card-name').textContent,
         qty: card.querySelector('[data-role="qty"]')?.value || '',
