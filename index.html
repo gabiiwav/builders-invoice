@@ -1430,6 +1430,12 @@
   @media (max-width:500px) {
     .onboard-card { padding:28px 20px; }
   }
+  @media (max-width:768px) {
+    #homeCards { grid-template-columns:1fr !important; }
+    #page-home .page-header { flex-direction:column; gap:12px; align-items:flex-start !important; }
+    #page-home .page-header > div:last-child { width:100%; display:flex; gap:8px; }
+    #page-home .page-header > div:last-child .btn { flex:1; }
+  }
 
   /* ══════════════════════════════════
      TOAST & SUCCESS OVERLAY
@@ -1798,7 +1804,14 @@
     <div class="nav-logo-plan">Pro Plan</div>
   </div>
 
-  <a class="nav-item active" id="navQuotes" onclick="showPage('dashboard')">
+  <a class="nav-item active" id="navHome" onclick="showPage('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    Home
+  </a>
+
+  <a class="nav-item" id="navQuotes" onclick="showPage('dashboard')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
     </svg>
@@ -1838,6 +1851,65 @@
 
 <!-- ══ APP BODY ══ -->
 <div class="app-body">
+
+  <!-- ═══ PAGE: HOME DASHBOARD ═══ -->
+  <div id="page-home" class="page-section">
+    <div class="dash-container">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <div>
+          <h1 class="page-title" id="homeGreeting">Good morning</h1>
+          <p style="font-size:14px;color:var(--gray);margin-top:4px;">Here's your business at a glance.</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="newQuote()">+ New Quote</button>
+          <button class="btn" style="background:var(--canvas);border:1.5px solid var(--border);" onclick="newInvoice()">+ New Invoice</button>
+        </div>
+      </div>
+
+      <!-- Revenue Cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;" id="homeCards">
+        <div class="card" style="padding:20px 24px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--gray);font-weight:600;margin-bottom:8px;">Revenue This Month</div>
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--green);" id="homeRevenue">$0.00</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px;" id="homeRevenueSub">0 paid invoices</div>
+        </div>
+        <div class="card" style="padding:20px 24px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--gray);font-weight:600;margin-bottom:8px;">Outstanding</div>
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--amber);" id="homeOutstanding">$0.00</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px;" id="homeOutstandingSub">0 unpaid invoices</div>
+        </div>
+        <div class="card" style="padding:20px 24px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--gray);font-weight:600;margin-bottom:8px;">Total Earned</div>
+          <div style="font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--ink);" id="homeTotalEarned">$0.00</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px;" id="homeTotalSub">all-time paid</div>
+        </div>
+      </div>
+
+      <!-- Action Items -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;">
+        <!-- Overdue Invoices -->
+        <div class="card" style="padding:20px 24px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--red);"></span>
+            <span style="font-size:13px;font-weight:600;color:var(--ink);">Overdue Invoices</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--red);font-weight:600;" id="homeOverdueCount">0</span>
+          </div>
+          <div id="homeOverdueList" style="font-size:13px;color:var(--gray);">No overdue invoices</div>
+        </div>
+
+        <!-- Quotes Awaiting Response -->
+        <div class="card" style="padding:20px 24px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></span>
+            <span style="font-size:13px;font-weight:600;color:var(--ink);">Quotes Awaiting Response</span>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--amber);font-weight:600;" id="homeAwaitingCount">0</span>
+          </div>
+          <div id="homeAwaitingList" style="font-size:13px;color:var(--gray);">No pending quotes</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- ═══ PAGE: QUOTE FLOW ═══ -->
   <div id="page-quote" class="page-section" style="display:none;">
@@ -4457,6 +4529,7 @@
 
     // Update nav active state
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (page === 'home') document.getElementById('navHome').classList.add('active');
     if (page === 'dashboard') document.getElementById('navQuotes').classList.add('active');
     if (page === 'quote') document.getElementById('navQuotes').classList.add('active');
     if (page === 'invoices' || page === 'invoice-edit') document.getElementById('navInvoices').classList.add('active');
@@ -4465,10 +4538,79 @@
 
     window.scrollTo(0, 0);
 
+    if (page === 'home') { Promise.all([refreshQuotes(), refreshInvoices()]).then(() => renderHome()); }
     if (page === 'dashboard') { refreshQuotes().then(() => renderDashboard()); }
     if (page === 'settings') { dbGetProfile(true).then(p => loadSettingsFromProfile(p)); }
     if (page === 'invoices') { refreshInvoices().then(() => renderInvoices()); }
     if (page === 'clients') { refreshClients().then(() => renderClients()); }
+  }
+
+  function renderHome() {
+    // Greeting based on time of day
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const userName = document.getElementById('navUserName').textContent || '';
+    document.getElementById('homeGreeting').textContent = userName ? `${greeting}, ${userName.split(' ')[0]}` : greeting;
+
+    const invoices = getInvoices();
+    const quotes = getQuotes();
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Revenue this month (paid invoices in current month)
+    const paidThisMonth = invoices.filter(inv => {
+      if (inv.status !== 'Paid') return false;
+      const d = inv.date ? new Date(inv.date + 'T00:00:00') : null;
+      return d && d >= monthStart;
+    });
+    const revenueAmt = paidThisMonth.reduce((s, inv) => s + (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0), 0);
+    document.getElementById('homeRevenue').textContent = formatMoney(revenueAmt);
+    document.getElementById('homeRevenueSub').textContent = paidThisMonth.length + ' paid invoice' + (paidThisMonth.length !== 1 ? 's' : '');
+
+    // Outstanding (unpaid + overdue)
+    const unpaid = invoices.filter(inv => inv.status === 'Unpaid' || inv.status === 'Overdue');
+    const outstandingAmt = unpaid.reduce((s, inv) => s + (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0), 0);
+    document.getElementById('homeOutstanding').textContent = formatMoney(outstandingAmt);
+    document.getElementById('homeOutstandingSub').textContent = unpaid.length + ' unpaid invoice' + (unpaid.length !== 1 ? 's' : '');
+
+    // Total earned (all-time paid)
+    const allPaid = invoices.filter(inv => inv.status === 'Paid');
+    const totalEarned = allPaid.reduce((s, inv) => s + (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0), 0);
+    document.getElementById('homeTotalEarned').textContent = formatMoney(totalEarned);
+    document.getElementById('homeTotalSub').textContent = allPaid.length + ' invoice' + (allPaid.length !== 1 ? 's' : '') + ' all-time';
+
+    // Overdue invoices
+    const overdue = invoices.filter(inv => {
+      if (inv.status === 'Paid') return false;
+      if (!inv.dueDate && !inv.date) return false;
+      const dueDate = inv.dueDate || inv.date;
+      return new Date(dueDate + 'T23:59:59') < now;
+    });
+    document.getElementById('homeOverdueCount').textContent = overdue.length;
+    if (overdue.length === 0) {
+      document.getElementById('homeOverdueList').innerHTML = '<div style="color:var(--green);font-size:12px;">✓ All caught up!</div>';
+    } else {
+      document.getElementById('homeOverdueList').innerHTML = overdue.slice(0, 5).map(inv =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-soft,#EBE7E1);cursor:pointer;" onclick="editInvoice('${inv.id}')">
+          <span style="color:var(--ink);font-weight:500;">${escapeHtml(inv.clientName || 'Unknown')}</span>
+          <span style="font-family:var(--font-mono);color:var(--red);font-weight:600;">${inv.total || '$0'}</span>
+        </div>`
+      ).join('');
+    }
+
+    // Quotes awaiting response (status = Sent)
+    const awaiting = quotes.filter(q => q.status === 'Sent');
+    document.getElementById('homeAwaitingCount').textContent = awaiting.length;
+    if (awaiting.length === 0) {
+      document.getElementById('homeAwaitingList').innerHTML = '<div style="color:var(--green);font-size:12px;">✓ No pending quotes</div>';
+    } else {
+      document.getElementById('homeAwaitingList').innerHTML = awaiting.slice(0, 5).map(q =>
+        `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-soft,#EBE7E1);cursor:pointer;" onclick="editQuote('${q.id}')">
+          <span style="color:var(--ink);font-weight:500;">${escapeHtml(q.clientName || q.jobDesc || 'Untitled')}</span>
+          <span style="font-family:var(--font-mono);color:var(--amber);font-weight:600;">${q.total || '$0'}</span>
+        </div>`
+      ).join('');
+    }
   }
 
   function newQuote() {
@@ -5838,7 +5980,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     try { initItemGrids(); } catch(e) {}
     try { initInvItemGrids(); } catch(e) {}
     Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
-    newQuote();
+    showPage('home');
     appInitialized = true;
   }
 
@@ -5902,7 +6044,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       try { initItemGrids(); } catch(e) {}
       try { initInvItemGrids(); } catch(e) {}
       Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
-      newQuote();
+      showPage('home');
       appInitialized = true;
     } catch(e) {
       console.error('initApp fatal:', e);
