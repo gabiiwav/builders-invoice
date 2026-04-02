@@ -1811,18 +1811,11 @@
     Home
   </a>
 
-  <a class="nav-item" id="navQuotes" onclick="showPage('dashboard')">
+  <a class="nav-item" id="navJobs" onclick="showPage('jobs')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
     </svg>
-    Quotes
-  </a>
-
-  <a class="nav-item" id="navInvoices" onclick="showPage('invoices')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
-    </svg>
-    Invoices
+    Jobs
   </a>
 
   <a class="nav-item" id="navClients" onclick="showPage('clients')">
@@ -1911,13 +1904,49 @@
     </div>
   </div>
 
+  <!-- ═══ PAGE: JOBS ═══ -->
+  <div id="page-jobs" class="page-section" style="display:none;">
+    <div class="dash-container">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <h1 class="page-title">Jobs</h1>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="newQuote()">+ New Quote</button>
+          <button class="btn" style="background:var(--canvas);border:1.5px solid var(--border);" onclick="newInvoice()">+ Quick Invoice</button>
+        </div>
+      </div>
+
+      <!-- Filter Pills -->
+      <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="filter-pill active" data-filter="all" onclick="setJobFilter('all',this)">All</button>
+        <button class="filter-pill" data-filter="quoting" onclick="setJobFilter('quoting',this)">Quoting</button>
+        <button class="filter-pill" data-filter="accepted" onclick="setJobFilter('accepted',this)">Accepted</button>
+        <button class="filter-pill" data-filter="invoiced" onclick="setJobFilter('invoiced',this)">Invoiced</button>
+        <button class="filter-pill" data-filter="paid" onclick="setJobFilter('paid',this)">Paid</button>
+        <button class="filter-pill" data-filter="declined" onclick="setJobFilter('declined',this)">Declined</button>
+      </div>
+
+      <!-- Search -->
+      <div style="margin-bottom:16px;">
+        <input type="text" id="jobSearchInput" placeholder="Search jobs, clients…" oninput="renderJobs()" style="width:100%;max-width:320px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-body);font-size:14px;color:var(--ink);background:var(--canvas);outline:none;" onfocus="this.style.borderColor='var(--amber)';this.style.background='var(--white)'" onblur="this.style.borderColor='';this.style.background=''">
+      </div>
+
+      <!-- Jobs List -->
+      <div id="jobsList" class="quotes-table"></div>
+      <div id="jobsEmpty" style="display:none;text-align:center;padding:60px 20px;">
+        <div style="font-size:48px;margin-bottom:12px;">📋</div>
+        <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:8px;">No jobs yet</div>
+        <div style="font-size:13px;color:var(--gray);">Create your first quote to get started.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ PAGE: QUOTE FLOW ═══ -->
   <div id="page-quote" class="page-section" style="display:none;">
   <div class="context-bar">
     <div class="context-breadcrumb">
-      <a href="#" onclick="showPage('dashboard');return false">Home</a>
+      <a href="#" onclick="showPage('home');return false">Home</a>
       <span class="sep">›</span>
-      <a href="#" onclick="showPage('dashboard');return false">Quotes</a>
+      <a href="#" onclick="showPage('jobs');return false">Jobs</a>
       <span class="sep">›</span>
       <span class="current">New Quote</span>
     </div>
@@ -2329,7 +2358,7 @@
   <div id="page-settings" class="page-section" style="display:none;">
     <div class="context-bar">
       <div class="context-breadcrumb">
-        <a href="#" onclick="showPage('dashboard');return false">Home</a>
+        <a href="#" onclick="showPage('home');return false">Home</a>
         <span class="sep">›</span>
         <span class="current">Settings</span>
       </div>
@@ -2821,6 +2850,40 @@
         viewer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;color:#C0392B;">Error loading document.</div>';
       }
     })();
+  }
+
+  // ══════════════════════════════════
+  //  PAYMENT SUCCESS/CANCEL PAGE (client returns from Stripe)
+  // ══════════════════════════════════
+  const __paymentStatus = new URLSearchParams(window.location.search).get('payment');
+  if (__paymentStatus && !__docId) {
+    window.__isDocViewer = true;
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('authPage').style.display = 'none';
+    document.getElementById('appShell').style.display = 'none';
+    document.getElementById('onboardingPage').style.display = 'none';
+    document.body.style.background = '#fff';
+
+    const viewer = document.createElement('div');
+    viewer.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:flex;align-items:center;justify-content:center;';
+    
+    if (__paymentStatus === 'success') {
+      viewer.innerHTML = `
+        <div style="text-align:center;font-family:'DM Sans',sans-serif;padding:40px;">
+          <div style="font-size:64px;margin-bottom:16px;">✅</div>
+          <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:800;color:#1C1C1E;margin-bottom:8px;">Payment Successful!</h2>
+          <p style="font-size:16px;color:#6B7280;margin-bottom:24px;">Thank you — your payment has been received.</p>
+          <p style="font-size:13px;color:#6B7280;">You can close this page.</p>
+        </div>`;
+    } else {
+      viewer.innerHTML = `
+        <div style="text-align:center;font-family:'DM Sans',sans-serif;padding:40px;">
+          <div style="font-size:64px;margin-bottom:16px;">↩️</div>
+          <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:800;color:#1C1C1E;margin-bottom:8px;">Payment Cancelled</h2>
+          <p style="font-size:16px;color:#6B7280;margin-bottom:24px;">No charge was made. You can try again from the invoice link.</p>
+        </div>`;
+    }
+    document.body.appendChild(viewer);
   }
 
   // ══════════════════════════════════
@@ -4543,26 +4606,175 @@
   //  PAGE ROUTER
   // ══════════════════════════════════
   function showPage(page) {
+    // Redirect old pages to jobs
+    if (page === 'dashboard' || page === 'invoices') page = 'jobs';
+
     document.querySelectorAll('.page-section').forEach(p => p.style.display = 'none');
     const el = document.getElementById('page-' + page);
     if (el) el.style.display = 'block';
 
-    // Update nav active state
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     if (page === 'home') document.getElementById('navHome').classList.add('active');
-    if (page === 'dashboard') document.getElementById('navQuotes').classList.add('active');
-    if (page === 'quote') document.getElementById('navQuotes').classList.add('active');
-    if (page === 'invoices' || page === 'invoice-edit') document.getElementById('navInvoices').classList.add('active');
+    if (page === 'jobs' || page === 'quote' || page === 'invoice-edit') document.getElementById('navJobs').classList.add('active');
     if (page === 'clients') document.getElementById('navClients').classList.add('active');
     if (page === 'settings') document.getElementById('navSettings').classList.add('active');
 
     window.scrollTo(0, 0);
 
     if (page === 'home') { Promise.all([refreshQuotes(), refreshInvoices()]).then(() => renderHome()); }
-    if (page === 'dashboard') { refreshQuotes().then(() => renderDashboard()); }
+    if (page === 'jobs') { Promise.all([refreshQuotes(), refreshInvoices()]).then(() => renderJobs()); }
     if (page === 'settings') { dbGetProfile(true).then(p => loadSettingsFromProfile(p)); }
-    if (page === 'invoices') { refreshInvoices().then(() => renderInvoices()); }
     if (page === 'clients') { refreshClients().then(() => renderClients()); }
+  }
+
+  // ══════════════════════════════════
+  //  JOBS PAGE
+  // ══════════════════════════════════
+  let currentJobFilter = 'all';
+
+  function setJobFilter(f, el) {
+    currentJobFilter = f;
+    document.querySelectorAll('#page-jobs .filter-pill').forEach(p => p.classList.toggle('active', p.dataset.filter === f));
+    renderJobs();
+  }
+
+  function getJobStatus(quote, invoice) {
+    if (invoice) {
+      if (invoice.status === 'Paid') return { label: 'Paid', class: 'status-paid', phase: 'paid' };
+      if (invoice.status === 'Overdue') return { label: 'Overdue', class: 'status-overdue', phase: 'invoiced' };
+      return { label: 'Invoice ' + (invoice.status || 'Unpaid'), class: 'status-unpaid', phase: 'invoiced' };
+    }
+    if (quote) {
+      if (quote.status === 'Declined') return { label: 'Declined', class: 'status-declined', phase: 'declined' };
+      if (quote.status === 'Accepted') return { label: 'Accepted', class: 'status-accepted', phase: 'accepted' };
+      if (quote.status === 'Sent') return { label: 'Quote Sent', class: 'status-sent', phase: 'quoting' };
+      return { label: 'Quote Draft', class: 'status-draft', phase: 'quoting' };
+    }
+    return { label: 'Draft', class: 'status-draft', phase: 'quoting' };
+  }
+
+  function renderJobs() {
+    const quotes = getQuotes();
+    const invoices = getInvoices();
+    const search = (document.getElementById('jobSearchInput')?.value || '').toLowerCase();
+
+    // Build jobs: merge quotes with linked invoices
+    const jobs = [];
+    const invoicesByQuote = {};
+    const standaloneInvoices = [];
+
+    invoices.forEach(inv => {
+      if (inv.fromQuoteId) {
+        invoicesByQuote[inv.fromQuoteId] = inv;
+      } else {
+        standaloneInvoices.push(inv);
+      }
+    });
+
+    quotes.forEach(q => {
+      const inv = invoicesByQuote[q.id] || null;
+      const status = getJobStatus(q, inv);
+      jobs.push({
+        title: q.jobDesc || 'Untitled Job',
+        client: q.clientName || '—',
+        amount: inv ? inv.total : q.total,
+        date: inv ? inv.date : q.date,
+        quoteNum: q.quoteNum,
+        invoiceNum: inv?.invoiceNum || null,
+        status: status,
+        quote: q,
+        invoice: inv,
+        updatedAt: Math.max(q.updatedAt || 0, inv?.updatedAt || 0)
+      });
+    });
+
+    standaloneInvoices.forEach(inv => {
+      const status = getJobStatus(null, inv);
+      jobs.push({
+        title: inv.jobDesc || 'Untitled Job',
+        client: inv.clientName || '—',
+        amount: inv.total,
+        date: inv.date,
+        quoteNum: null,
+        invoiceNum: inv.invoiceNum,
+        status: status,
+        quote: null,
+        invoice: inv,
+        updatedAt: inv.updatedAt || 0
+      });
+    });
+
+    let filtered = jobs;
+    if (currentJobFilter !== 'all') {
+      filtered = jobs.filter(j => j.status.phase === currentJobFilter);
+    }
+    if (search) {
+      filtered = filtered.filter(j =>
+        j.title.toLowerCase().includes(search) ||
+        j.client.toLowerCase().includes(search) ||
+        (j.quoteNum || '').toLowerCase().includes(search) ||
+        (j.invoiceNum || '').toLowerCase().includes(search)
+      );
+    }
+
+    filtered.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    if (filtered.length === 0) {
+      document.getElementById('jobsList').style.display = 'none';
+      document.getElementById('jobsEmpty').style.display = '';
+      return;
+    }
+    document.getElementById('jobsList').style.display = '';
+    document.getElementById('jobsEmpty').style.display = 'none';
+
+    document.getElementById('jobsList').innerHTML = filtered.map(j => {
+      const q = j.quote;
+      const inv = j.invoice;
+      const docLabel = j.invoiceNum && j.quoteNum
+        ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--gray);">${j.quoteNum} → ${j.invoiceNum}</span>`
+        : `<span style="font-family:var(--font-mono);font-size:10px;color:var(--gray);">${j.quoteNum || j.invoiceNum || ''}</span>`;
+
+      let actions = '';
+      if (q && !inv) {
+        if (q.status === 'Sent') {
+          actions += `<button class="qt-action-btn" onclick="event.stopPropagation();quickStatus('${q.id}','Accepted')" title="Accept" style="color:var(--green);">✓</button>`;
+          actions += `<button class="qt-action-btn" onclick="event.stopPropagation();quickStatus('${q.id}','Declined')" title="Decline" style="color:var(--red);">✗</button>`;
+        }
+        if (q.status === 'Accepted') {
+          actions += `<button class="qt-action-btn" onclick="event.stopPropagation();convertToInvoiceFromDash('${q.id}')" title="Create Invoice" style="color:var(--amber);font-size:11px;">→ Invoice</button>`;
+        }
+      }
+      if (inv && inv.status !== 'Paid') {
+        actions += `<button class="qt-action-btn" onclick="event.stopPropagation();quickMarkPaid('${inv.id}')" title="Mark Paid" style="color:var(--green);">💰</button>`;
+      }
+      actions += `<button class="qt-action-btn danger" onclick="event.stopPropagation();deleteJob('${q?.id||''}','${inv?.id||''}')" title="Delete">×</button>`;
+
+      const onclick = inv ? `editInvoice('${inv.id}')` : (q ? `editQuote('${q.id}')` : '');
+
+      return `<div class="qt-row" onclick="${onclick}">
+        <div style="flex:2;min-width:0;"><div class="qt-client">${escapeHtml(j.title)}</div><div class="qt-client-sub">${escapeHtml(j.client)}</div></div>
+        <div style="flex:1;">${docLabel}</div>
+        <div style="flex:0.8;"><span class="status-badge ${j.status.class}">${j.status.label}</span></div>
+        <div class="qt-date" style="flex:0.7;">${formatDate(j.date)}</div>
+        <div class="qt-amount" style="flex:0.7;">${j.amount || '$0.00'}</div>
+        <div class="qt-actions" style="flex:0.8;justify-content:flex-end;">${actions}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function quickMarkPaid(invId) {
+    await sb.from('invoices').update({ status: 'Paid' }).eq('id', invId);
+    await refreshInvoices();
+    renderJobs();
+    showToast('Invoice marked as Paid');
+  }
+
+  async function deleteJob(quoteId, invoiceId) {
+    if (!confirm('Delete this job?')) return;
+    if (invoiceId) await dbDeleteInvoice(invoiceId);
+    if (quoteId) await dbDeleteQuote(quoteId);
+    await Promise.all([refreshQuotes(), refreshInvoices()]);
+    renderJobs();
   }
 
   function renderHome() {
@@ -4756,7 +4968,7 @@
   function setFilter(f, el) {
     currentFilter = f;
     document.querySelectorAll('.filter-pill').forEach(p => p.classList.toggle('active', p.dataset.filter === f));
-    renderDashboard();
+    renderJobs();
   }
   function setView(v) {
     currentDashView = v;
@@ -4764,7 +4976,7 @@
     document.getElementById('viewCards').classList.toggle('active', v === 'cards');
     document.getElementById('tableView').style.display = v === 'table' ? '' : 'none';
     document.getElementById('cardView').style.display = v === 'cards' ? '' : 'none';
-    renderDashboard();
+    renderJobs();
   }
 
   function formatDate(d) {
@@ -4805,6 +5017,8 @@
         <div class="qt-date">${formatDate(r.date)}</div>
         <div class="qt-amount">${r.total||'$0.00'}</div>
         <div class="qt-actions" onclick="event.stopPropagation()">
+          ${r.status === 'Sent' ? `<button class="qt-action-btn" onclick="quickStatus('${r.id}','Accepted')" title="Mark Accepted" style="color:var(--green);">✓</button><button class="qt-action-btn" onclick="quickStatus('${r.id}','Declined')" title="Mark Declined" style="color:var(--red);">✗</button>` : ''}
+          ${r.status === 'Accepted' ? `<button class="qt-action-btn" onclick="convertToInvoiceFromDash('${r.id}')" title="Convert to Invoice" style="color:var(--amber);">→$</button>` : ''}
           <button class="qt-action-btn" onclick="duplicateQuote('${r.id}')" title="Duplicate">⧉</button>
           <button class="qt-action-btn danger" onclick="deleteQuote('${r.id}')" title="Delete">×</button>
         </div>
@@ -4817,6 +5031,8 @@
         <div class="q-card-desc">${escapeHtml(r.clientName||'No client')}</div>
         <div class="q-card-bottom"><div class="q-card-amount">${r.total||'$0.00'}</div><div class="q-card-date">${formatDate(r.date)}</div></div>
         <div class="q-card-actions" onclick="event.stopPropagation()">
+          ${r.status === 'Sent' ? `<button class="qt-action-btn" onclick="quickStatus('${r.id}','Accepted')" title="Accept" style="color:var(--green);">✓</button><button class="qt-action-btn" onclick="quickStatus('${r.id}','Declined')" title="Decline" style="color:var(--red);">✗</button>` : ''}
+          ${r.status === 'Accepted' ? `<button class="qt-action-btn" onclick="convertToInvoiceFromDash('${r.id}')" title="Invoice" style="color:var(--amber);">→$</button>` : ''}
           <button class="qt-action-btn" onclick="duplicateQuote('${r.id}')" title="Duplicate">⧉</button>
           <button class="qt-action-btn danger" onclick="deleteQuote('${r.id}')" title="Delete">×</button>
         </div>
@@ -4834,14 +5050,78 @@
     const items = (orig.items || []).map(i => ({ desc: i.description || i.desc, unit: i.unit, qty: i.qty, rate: i.rate, source: i.source_name || i.source || '' }));
     await dbSaveQuote(dupe, items);
     await refreshQuotes();
-    renderDashboard();
+    renderJobs();
+  }
+
+  async function quickStatus(id, newStatus) {
+    await sb.from('quotes').update({ status: newStatus }).eq('id', id);
+    await refreshQuotes();
+    renderJobs();
+    showToast(`Quote marked as ${newStatus}`);
+  }
+
+  async function convertToInvoiceFromDash(id) {
+    const quotes = getQuotes();
+    const q = quotes.find(qt => qt.id === id);
+    if (!q) return;
+
+    // Mark quote as Accepted
+    await sb.from('quotes').update({ status: 'Accepted' }).eq('id', id);
+
+    // Create invoice from quote data
+    await refreshInvoices();
+    const invoices = getInvoices();
+    const invDate = new Date().toISOString().split('T')[0];
+    const dueD = new Date();
+    dueD.setDate(dueD.getDate() + 30);
+
+    const invoice = {
+      id: null,
+      invoiceNum: 'INV-' + String(invoices.length + 1).padStart(4, '0'),
+      fromQuoteId: q.id,
+      fromQuoteNum: q.quoteNum,
+      status: 'Unpaid',
+      date: invDate,
+      dueIn: 30,
+      dueDate: dueD.toISOString().split('T')[0],
+      clientName: q.clientName,
+      clientPhone: q.clientPhone,
+      clientEmail: q.clientEmail,
+      jobAddress: q.jobAddress,
+      jobDesc: q.jobDesc,
+      bizName: q.bizName,
+      bizPhone: q.bizPhone,
+      bizEmail: q.bizEmail,
+      bizAddress: q.bizAddress,
+      notes: q.notes,
+      taxEnabled: q.taxEnabled,
+      taxRate: q.taxRate,
+      subtotal: q.subtotal,
+      total: q.total,
+    };
+
+    const items = (q.items || []).map(i => ({
+      desc: i.description || i.desc,
+      unit: i.unit,
+      qty: i.qty,
+      rate: i.rate,
+      source: i.source_name || i.source || ''
+    }));
+
+    const invId = await dbSaveInvoice(invoice, items);
+    await refreshInvoices();
+    await refreshQuotes();
+
+    // Open the new invoice for editing
+    editInvoice(invId);
+    showToast('Invoice created from quote — review and send');
   }
 
   async function deleteQuote(id) {
     if (!confirm('Delete this quote?')) return;
     await dbDeleteQuote(id);
     await refreshQuotes();
-    renderDashboard();
+    renderJobs();
   }
 
   // ══════════════════════════════════
@@ -5191,7 +5471,7 @@
   function setInvFilter(f, el) {
     currentInvFilter = f;
     document.querySelectorAll('[data-invfilter]').forEach(p => p.classList.toggle('active', p.dataset.invfilter === f));
-    renderInvoices();
+    renderJobs();
   }
 
   function renderInvoices() {
@@ -5243,7 +5523,7 @@
     if (!confirm('Delete this invoice?')) return;
     await dbDeleteInvoice(id);
     await refreshInvoices();
-    renderInvoices();
+    renderJobs();
   }
 
   // ── Invoice line items ──
@@ -5574,8 +5854,8 @@
       // Upload to get shareable link
       const docUrl = await uploadDocumentHtml(invHtml, 'invoice');
 
-      // Save invoice
-      await saveInvoiceAndReturn();
+      // Save invoice (without navigating away)
+      await saveInvoiceOnly();
 
       // Create Stripe payment link if connected
       let paymentUrl = '';
@@ -5601,8 +5881,6 @@
         biz_email: bizEmail
       });
 
-      showToast('Invoice emailed to ' + name);
-
       // If we got a payment URL, update the shared document to include pay button
       if (paymentUrl && docUrl) {
         const docId = docUrl.split('?doc=')[1];
@@ -5612,6 +5890,11 @@
           await sb.from('shared_documents').update({ html_content: origHtml + payBtnHtml }).eq('id', docId);
         }
       }
+
+      // NOW navigate to invoices page
+      await refreshInvoices();
+      showPage('invoices');
+      showToast('Invoice emailed to ' + name);
 
     } catch(e) {
       console.error('sendInvoice error:', e);
