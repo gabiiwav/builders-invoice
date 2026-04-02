@@ -5065,6 +5065,8 @@
     const q = quotes.find(qt => qt.id === id);
     if (!q) return;
 
+    console.log('Converting quote:', q.quoteNum, 'Items:', q.items?.length, 'Sample item:', q.items?.[0]);
+
     // Mark quote as Accepted
     await sb.from('quotes').update({ status: 'Accepted' }).eq('id', id);
 
@@ -5082,17 +5084,17 @@
       fromQuoteNum: q.quoteNum,
       status: 'Unpaid',
       date: invDate,
-      dueIn: 30,
+      dueIn: q.validFor || 30,
       dueDate: dueD.toISOString().split('T')[0],
       clientName: q.clientName,
       clientPhone: q.clientPhone,
       clientEmail: q.clientEmail,
       jobAddress: q.jobAddress,
       jobDesc: q.jobDesc,
-      bizName: q.bizName,
-      bizPhone: q.bizPhone,
-      bizEmail: q.bizEmail,
-      bizAddress: q.bizAddress,
+      bizName: q.bizName || (_profileCache?.biz_name || ''),
+      bizPhone: q.bizPhone || (_profileCache?.biz_phone || ''),
+      bizEmail: q.bizEmail || (_profileCache?.biz_email || ''),
+      bizAddress: q.bizAddress || (_profileCache?.biz_address || ''),
       notes: q.notes,
       taxEnabled: q.taxEnabled,
       taxRate: q.taxRate,
@@ -5101,16 +5103,29 @@
     };
 
     const items = (q.items || []).map(i => ({
-      desc: i.description || i.desc,
-      unit: i.unit,
-      qty: i.qty,
-      rate: i.rate,
+      desc: i.description || i.desc || '',
+      unit: i.unit || 'each',
+      qty: i.qty || 0,
+      rate: i.rate || 0,
       source: i.source_name || i.source || ''
     }));
 
+    console.log('Invoice items to save:', items.length, items);
+
     const invId = await dbSaveInvoice(invoice, items);
+    console.log('Saved invoice ID:', invId);
+
+    if (!invId) {
+      showToast('Error creating invoice');
+      return;
+    }
+
     await refreshInvoices();
     await refreshQuotes();
+
+    // Verify items loaded
+    const savedInv = getInvoices().find(i => i.id === invId);
+    console.log('Loaded invoice items:', savedInv?.items?.length, savedInv?.items);
 
     // Open the new invoice for editing
     editInvoice(invId);
@@ -5860,11 +5875,33 @@
       // Create Stripe payment link if connected
       let paymentUrl = '';
       const profile = _profileCache;
+      console.log('Stripe check:', {
+        stripe_account_id: profile?.stripe_account_id,
+        currentInvId: currentInvId,
+        totalStr: total
+      });
+      
       if (profile?.stripe_account_id && currentInvId) {
         sendBtn.textContent = 'Creating payment link…';
         const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
+        console.log('Creating payment link: amount=$' + totalNum, 'account:', profile.stripe_account_id);
         if (totalNum > 0) {
           paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile.stripe_account_id) || '';
+          console.log('Payment URL result:', paymentUrl);
+        }
+      } else {
+        console.log('Skipping payment link — no Stripe account or no invoice ID');
+        // Try refreshing profile in case it's stale
+        if (!profile?.stripe_account_id) {
+          const freshProfile = await dbGetProfile(true);
+          if (freshProfile?.stripe_account_id && currentInvId) {
+            sendBtn.textContent = 'Creating payment link…';
+            const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
+            if (totalNum > 0) {
+              paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), freshProfile.stripe_account_id) || '';
+              console.log('Payment URL (after refresh):', paymentUrl);
+            }
+          }
         }
       }
 
