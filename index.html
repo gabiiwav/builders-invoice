@@ -594,6 +594,7 @@
     font-size: 18px;
   }
   .line-remove:hover { background: var(--red-pale); color: var(--red); }
+  #catalogToggle.open, #invCatalogToggle.open { max-height:3000px !important; }
   .line-note-btn {
     background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px;
     opacity: 0.35; transition: opacity 0.15s; border-radius: 4px; flex-shrink: 0;
@@ -855,6 +856,18 @@
   }
   .toggle-switch.on { background: var(--amber); }
   .toggle-switch.on::after { transform: translateX(16px); }
+  .catalog-toggle {
+    width: 44px; height: 24px; background: var(--border); border-radius: 12px;
+    position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s;
+    border: 1.5px solid var(--border); outline: none;
+  }
+  .catalog-toggle::after {
+    content: ''; position: absolute; width: 18px; height: 18px; background: var(--white);
+    border-radius: 50%; top: 2px; left: 2px; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+  }
+  .catalog-toggle.on { background: var(--amber); border-color: var(--amber); }
+  .catalog-toggle.on::after { transform: translateX(20px); }
 
   .tax-rate-input {
     width: 56px;
@@ -2090,8 +2103,18 @@
         </div>
       </div>
 
-      <!-- ═══ CATEGORY ACCORDIONS ═══ -->
-      <div id="categorySections">
+      <!-- Items Table (Primary) -->
+      <!-- Item Catalog Toggle -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 16px;background:var(--canvas);border-radius:10px;border:1px solid var(--border);">
+        <button class="catalog-toggle" id="catalogSwitch" onclick="toggleCatalog('catalogToggle','catalogSwitch')"></button>
+        <div>
+          <span style="font-size:14px;color:var(--ink);font-weight:600;">Quick Add Catalog</span>
+          <div style="font-size:11px;color:var(--gray);margin-top:2px;">Pre-built trade items — tap to add to your line items</div>
+        </div>
+      </div>
+      <div id="catalogToggle" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease;">
+        <div style="padding:0 0 16px;">
+          <div id="categorySections">
 
         <!-- 🏗️ Exterior Work -->
         <div class="cat-section" data-cat="exterior">
@@ -2184,8 +2207,9 @@
         </div>
 
       </div>
+          </div>
+        </div>
 
-      <!-- Items Table -->
       <div class="card card-line-items">
         <div class="card-header">
           <span class="card-label">Items</span>
@@ -2585,8 +2609,17 @@
           </div>
         </div>
 
-        <!-- Category Accordions -->
-        <div id="invCategorySections" class="inv-accordions">
+        <!-- Item Catalog Toggle -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 16px;background:var(--canvas);border-radius:10px;border:1px solid var(--border);">
+          <button class="catalog-toggle" id="invCatalogSwitch" onclick="toggleCatalog('invCatalogToggle','invCatalogSwitch')"></button>
+          <div>
+            <span style="font-size:14px;color:var(--ink);font-weight:600;">Quick Add Catalog</span>
+            <div style="font-size:11px;color:var(--gray);margin-top:2px;">Pre-built trade items — tap to add to your line items</div>
+          </div>
+        </div>
+        <div id="invCatalogToggle" style="max-height:0;overflow:hidden;transition:max-height 0.3s ease;">
+          <div style="padding:0 0 16px;">
+            <div id="invCategorySections" class="inv-accordions">
 
           <div class="cat-section" data-cat="inv-exterior">
             <div class="cat-header" onclick="toggleCat(this)">
@@ -2650,7 +2683,10 @@
 
         </div>
 
-        <!-- Line Items -->
+            </div>
+          </div>
+
+        <!-- Line Items (Primary) -->
         <div class="card card-line-items">
           <div class="card-header">
             <span class="card-label">Items</span>
@@ -3508,6 +3544,13 @@
   // ══════════════════════════════════
   //  ACCORDION TOGGLE
   // ══════════════════════════════════
+  function toggleCatalog(toggleId, switchId) {
+    const toggle = document.getElementById(toggleId);
+    const sw = document.getElementById(switchId);
+    toggle.classList.toggle('open');
+    if (sw) sw.classList.toggle('on');
+  }
+
   function toggleCat(header) {
     header.closest('.cat-section').classList.toggle('open');
   }
