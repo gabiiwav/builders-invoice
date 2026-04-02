@@ -2406,6 +2406,26 @@
         <button class="btn btn-primary" onclick="saveSettingsData()">Save Settings</button>
       </div>
 
+      <!-- Stripe Connect -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-header"><span class="card-label">Accept Card Payments</span></div>
+        <div class="card-body">
+          <div id="stripeNotConnected">
+            <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Connect your Stripe account to accept credit card payments on invoices. Clients will see a "Pay with Card" button when you send them an invoice.</p>
+            <p style="font-size:12px;color:var(--gray);margin-bottom:16px;">Stripe charges 2.9% + $0.30 per transaction. Funds go directly to your bank account.</p>
+            <button class="btn btn-primary" onclick="connectStripe()" id="stripeConnectBtn">Connect with Stripe →</button>
+          </div>
+          <div id="stripeConnected" style="display:none;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:10px;height:10px;border-radius:50%;background:var(--green);"></span>
+              <span style="font-size:14px;font-weight:600;color:var(--green);">Stripe Connected</span>
+            </div>
+            <p style="font-size:12px;color:var(--gray);margin-top:8px;">Your invoices now include a "Pay with Card" button. Account: <span id="stripeAccountDisplay" style="font-family:var(--font-mono);font-size:11px;"></span></p>
+            <button class="btn" style="margin-top:12px;background:var(--canvas);border:1.5px solid var(--border);font-size:12px;" onclick="connectStripe()">Update Stripe Settings</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Data Export -->
       <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);">
         <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:6px;">Data Backup</h3>
@@ -4860,6 +4880,9 @@
     document.getElementById('sHandleVenmo').value = handles.venmo || '';
     document.getElementById('sHandlePayPal').value = handles.paypal || '';
     document.getElementById('sHandleZelle').value = handles.zelle || '';
+
+    // Stripe Connect status
+    updateStripeUI(data);
   }
 
   async function saveSettingsData() {
@@ -4885,6 +4908,72 @@
     const el = document.getElementById('settingsSaveStatus');
     el.style.opacity = '1';
     setTimeout(() => el.style.opacity = '0', 2500);
+  }
+
+  // ══════════════════════════════════
+  //  STRIPE CONNECT
+  // ══════════════════════════════════
+  async function connectStripe() {
+    const btn = document.getElementById('stripeConnectBtn');
+    if (btn) { btn.textContent = 'Connecting…'; btn.disabled = true; }
+
+    try {
+      const resp = await fetch('/api/stripe-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          user_email: currentUser.email,
+          return_url: window.location.origin + window.location.pathname
+        })
+      });
+      const data = await resp.json();
+      if (data.error) {
+        showToast('Stripe error: ' + data.error);
+        if (btn) { btn.textContent = 'Connect with Stripe →'; btn.disabled = false; }
+        return;
+      }
+      // Redirect to Stripe onboarding
+      window.location.href = data.url;
+    } catch(e) {
+      console.error('Stripe connect error:', e);
+      showToast('Failed to connect Stripe');
+      if (btn) { btn.textContent = 'Connect with Stripe →'; btn.disabled = false; }
+    }
+  }
+
+  function updateStripeUI(profile) {
+    if (profile?.stripe_account_id) {
+      document.getElementById('stripeNotConnected').style.display = 'none';
+      document.getElementById('stripeConnected').style.display = '';
+      document.getElementById('stripeAccountDisplay').textContent = profile.stripe_account_id;
+    } else {
+      document.getElementById('stripeNotConnected').style.display = '';
+      document.getElementById('stripeConnected').style.display = 'none';
+    }
+  }
+
+  async function createPaymentLink(invoiceId, amountDollars, description, stripeAccountId) {
+    try {
+      const resp = await fetch('/api/stripe-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoice_id: invoiceId,
+          amount_cents: Math.round(amountDollars * 100),
+          description: description,
+          stripe_account_id: stripeAccountId,
+          success_url: window.location.origin + '/?payment=success&invoice=' + invoiceId,
+          cancel_url: window.location.origin + '/?payment=cancelled&invoice=' + invoiceId
+        })
+      });
+      const data = await resp.json();
+      if (data.error) { console.error('Payment link error:', data.error); return null; }
+      return data.url;
+    } catch(e) {
+      console.error('Payment link error:', e);
+      return null;
+    }
   }
 
   async function exportAllData() {
@@ -5488,6 +5577,17 @@
       // Save invoice
       await saveInvoiceAndReturn();
 
+      // Create Stripe payment link if connected
+      let paymentUrl = '';
+      const profile = _profileCache;
+      if (profile?.stripe_account_id && currentInvId) {
+        sendBtn.textContent = 'Creating payment link…';
+        const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
+        if (totalNum > 0) {
+          paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile.stripe_account_id) || '';
+        }
+      }
+
       // Send via EmailJS
       await emailjs.send('service_i3t7fwd', 'template_t619ekw', {
         client_name: name,
@@ -5495,13 +5595,23 @@
         doc_type: 'Invoice',
         doc_num: invNum,
         job_desc: jobDesc ? 'Job: ' + jobDesc : '',
-        total: 'Amount Due: ' + total + ' (' + dueLabel + ')',
+        total: 'Amount Due: ' + total + ' (' + dueLabel + ')' + (paymentUrl ? '\n\n💳 Pay with card: ' + paymentUrl : ''),
         doc_link: docUrl || '',
         biz_name: bizName,
         biz_email: bizEmail
       });
 
       showToast('Invoice emailed to ' + name);
+
+      // If we got a payment URL, update the shared document to include pay button
+      if (paymentUrl && docUrl) {
+        const docId = docUrl.split('?doc=')[1];
+        if (docId) {
+          const payBtnHtml = `<div style="margin-top:24px;text-align:center;"><a href="${paymentUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Powered by Stripe — secure payment</p></div>`;
+          const origHtml = buildInvoiceHtml();
+          await sb.from('shared_documents').update({ html_content: origHtml + payBtnHtml }).eq('id', docId);
+        }
+      }
 
     } catch(e) {
       console.error('sendInvoice error:', e);
