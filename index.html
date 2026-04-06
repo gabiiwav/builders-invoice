@@ -2407,19 +2407,7 @@
       <div class="card">
         <div class="card-header"><span class="card-label">Business Info</span></div>
         <div class="card-body">
-          <div class="logo-upload">
-            <label class="logo-preview" id="settingsLogoPreview" onclick="settingsUploadLogo()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-              </svg>
-            </label>
-            <div class="logo-info">
-              <div class="logo-info-title">Company Logo</div>
-              <div class="logo-info-hint">Shows on all quotes & invoices</div>
-              <button class="logo-remove" id="settingsLogoRemove" onclick="settingsRemoveLogo()" style="display:none;">Remove logo</button>
-            </div>
-          </div>
-          <div class="form-grid form-grid-2" style="margin-top:16px;">
+          <div class="form-grid form-grid-2">
             <div class="form-field"><label>Business Name</label><input type="text" id="sBizName" placeholder="Your company name"></div>
             <div class="form-field"><label>Phone</label><input type="tel" id="sBizPhone" placeholder="(555) 000-0000" oninput="formatPhone(this)"></div>
             <div class="form-field"><label>Email</label><input type="email" id="sBizEmail" placeholder="you@company.com"></div>
@@ -2450,17 +2438,14 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><span class="card-label">Accepted Payment Methods</span></div>
+        <div class="card-header"><span class="card-label">Payment Info</span></div>
         <div class="card-body">
-          <div class="payment-grid" id="paymentGrid"></div>
-          <div id="paymentHandles" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-            <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">Enter your usernames — these show on quotes & invoices so clients know where to pay.</p>
-            <div class="form-grid form-grid-2">
-              <div class="form-field"><label>💵 CashApp</label><input type="text" id="sHandleCashApp" placeholder="$yourname"></div>
-              <div class="form-field"><label>💙 Venmo</label><input type="text" id="sHandleVenmo" placeholder="@yourname"></div>
-              <div class="form-field"><label>🅿️ PayPal</label><input type="text" id="sHandlePayPal" placeholder="you@email.com or @handle"></div>
-              <div class="form-field"><label>⚡ Zelle</label><input type="text" id="sHandleZelle" placeholder="phone or email"></div>
-            </div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">Enter your payment usernames — filled ones automatically show on invoices.</p>
+          <div class="form-grid form-grid-2">
+            <div class="form-field"><label>💵 CashApp</label><input type="text" id="sHandleCashApp" placeholder="$yourname"></div>
+            <div class="form-field"><label>💙 Venmo</label><input type="text" id="sHandleVenmo" placeholder="@yourname"></div>
+            <div class="form-field"><label>🅿️ PayPal</label><input type="text" id="sHandlePayPal" placeholder="you@email.com or @handle"></div>
+            <div class="form-field"><label>⚡ Zelle</label><input type="text" id="sHandleZelle" placeholder="phone or email"></div>
           </div>
         </div>
       </div>
@@ -2767,16 +2752,6 @@
               <div class="totals-meta" style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);">
                 <div class="totals-meta-row"><span class="totals-meta-label">Invoice</span><span class="totals-meta-value" id="invSidebarNum">INV-0001</span></div>
                 <div class="totals-meta-row"><span class="totals-meta-label">From Quote</span><span class="totals-meta-value" id="invFromQuote">—</span></div>
-              </div>
-              <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                  <span style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.4);font-weight:600;">Accepted Payment</span>
-                  <span class="line-note-btn" onclick="document.getElementById('invPaymentEdit').style.display=document.getElementById('invPaymentEdit').style.display==='none'?'':'none'" style="font-size:11px;cursor:pointer;opacity:0.5;">✏️</span>
-                </div>
-                <div id="invPaymentPills" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
-                <div id="invPaymentEdit" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">
-                  <div id="invPaymentToggles" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
-                </div>
               </div>
             </div>
           </div>
@@ -5440,7 +5415,6 @@
       settingsLogoData = null;
     }
     if (data.payments) activePayments = new Set(data.payments);
-    renderPaymentToggles();
 
     // Payment handles
     const handles = data.payment_handles || {};
@@ -5627,17 +5601,6 @@
     document.getElementById('settingsLogoPreview').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
     document.getElementById('settingsLogoPreview').classList.remove('has-logo');
     document.getElementById('settingsLogoRemove').style.display = 'none';
-  }
-
-  function renderPaymentToggles() {
-    document.getElementById('paymentGrid').innerHTML = PAYMENT_OPTIONS.map(p => `
-      <label class="payment-toggle${activePayments.has(p) ? ' active' : ''}" onclick="togglePayment('${p}')">
-        <span class="pay-check"></span>${p}
-      </label>`).join('');
-  }
-  function togglePayment(m) {
-    if (activePayments.has(m)) activePayments.delete(m); else activePayments.add(m);
-    renderPaymentToggles();
   }
 
   // ══════════════════════════════════
@@ -5874,43 +5837,6 @@
   }
 
   // ── Invoice Payment Methods ──
-  let invActivePayments = new Set();
-
-  function renderInvPayments() {
-    // Show active payment pills
-    const pillsEl = document.getElementById('invPaymentPills');
-    if (!pillsEl) return;
-    const active = Array.from(invActivePayments);
-    if (active.length === 0) {
-      pillsEl.innerHTML = '<span style="font-size:11px;color:rgba(255,255,255,0.3);">None selected</span>';
-    } else {
-      pillsEl.innerHTML = active.map(p => `<span style="display:inline-block;padding:3px 8px;background:rgba(255,255,255,0.08);border-radius:4px;font-size:10px;color:rgba(255,255,255,0.7);font-weight:500;">${p}</span>`).join('');
-    }
-
-    // Render toggles
-    const togglesEl = document.getElementById('invPaymentToggles');
-    if (!togglesEl) return;
-    togglesEl.innerHTML = PAYMENT_OPTIONS.map(p => {
-      const on = invActivePayments.has(p);
-      return `<span onclick="toggleInvPayment('${p}')" style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;transition:all 0.15s;${on ? 'background:var(--amber);color:white;' : 'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);'}">${p}</span>`;
-    }).join('');
-  }
-
-  function toggleInvPayment(method) {
-    if (invActivePayments.has(method)) {
-      invActivePayments.delete(method);
-    } else {
-      invActivePayments.add(method);
-    }
-    renderInvPayments();
-  }
-
-  function initInvPayments() {
-    // Start with settings defaults
-    invActivePayments = new Set(activePayments);
-    renderInvPayments();
-  }
-
   function calcInvTotals() {
     let subtotal = 0;
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
@@ -5983,7 +5909,6 @@
 
     // Auto-fill from cached profile (synchronous)
     autoFillInvFromSettings();
-    initInvPayments();
   }
 
   function editInvoice(id) {
@@ -6072,7 +5997,6 @@
 
     document.getElementById('invPageTitle').textContent = 'Edit Invoice';
     document.getElementById('invEditTitle').textContent = inv.invoiceNum || 'Edit Invoice';
-    initInvPayments();
     showPage('invoice-edit');
   }
 
@@ -6428,10 +6352,6 @@
       }
     });
 
-    // Payment methods from cached settings
-    const payments = invActivePayments.size > 0 ? Array.from(invActivePayments) : Array.from(activePayments);
-    const paymentHtml = payments.map(p => `<span style="display:inline-block;padding:4px 10px;border-radius:4px;background:#F3F4F6;font-size:10px;font-weight:600;color:#6B7280;margin:2px;">${p}</span>`).join('');
-
     // Biz logo from settings
     let logoData = settingsLogoData || bizLogoData || null;
 
@@ -6516,12 +6436,8 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     <p style="font-size:13px;color:#3E3E44;line-height:1.7;white-space:pre-wrap;">${escapeHtml(notes)}</p>
   </div>` : ''}
 
-  <!-- Payment Methods -->
-  ${paymentHtml ? `<div style="margin-bottom:24px;">
-    <p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:8px;">Accepted Payment</p>
-    <div>${paymentHtml}</div>
-    ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) parts.push('💵 CashApp: '+h.cashapp); if(h.venmo) parts.push('💙 Venmo: '+h.venmo); if(h.paypal) parts.push('🅿️ PayPal: '+h.paypal); if(h.zelle) parts.push('⚡ Zelle: '+h.zelle); return parts.length ? '<div style="margin-top:8px;font-size:12px;color:#3E3E44;line-height:2;">'+parts.map(p=>'<span style="margin-right:16px;">'+p+'</span>').join('')+'</div>' : ''; })()}
-  </div>` : ''}
+  <!-- Payment Info -->
+  ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) parts.push('💵 CashApp: <strong>'+escapeHtml(h.cashapp)+'</strong>'); if(h.venmo) parts.push('💙 Venmo: <strong>'+escapeHtml(h.venmo)+'</strong>'); if(h.paypal) parts.push('🅿️ PayPal: <strong>'+escapeHtml(h.paypal)+'</strong>'); if(h.zelle) parts.push('⚡ Zelle: <strong>'+escapeHtml(h.zelle)+'</strong>'); return parts.length ? '<div style="margin-bottom:24px;padding:16px 20px;background:#F5F2EE;border-radius:8px;"><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:8px;">Payment Info</p><div style="font-size:13px;color:#3E3E44;line-height:2.2;">'+parts.map(p=>'<div>'+p+'</div>').join('')+'</div></div>' : ''; })()}
 
   <!-- Footer -->
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;align-items:center;">
