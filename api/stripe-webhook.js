@@ -68,6 +68,12 @@ module.exports = async (req, res) => {
       case 'checkout.session.completed': {
         const session = event.data.object;
 
+        console.log('Session mode:', session.mode);
+        console.log('Session client_reference_id:', session.client_reference_id);
+        console.log('Session customer:', session.customer);
+        console.log('Session subscription:', session.subscription);
+        console.log('Session metadata:', JSON.stringify(session.metadata));
+
         // ── CASE 1: Invoice payment (Stripe Connect) ──
         const invoiceId = session.metadata?.invoice_id;
         if (invoiceId) {
@@ -84,10 +90,14 @@ module.exports = async (req, res) => {
           const customerId = session.customer;
           const subscriptionId = session.subscription;
 
+          console.log('Processing subscription for user:', userId);
+
           // Get subscription to find tier
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const priceId = subscription.items.data[0]?.price?.id;
           const tier = getTierFromPrice(priceId);
+
+          console.log('Price ID:', priceId, '→ Tier:', tier);
 
           if (tier) {
             // Cancel any existing subscription to prevent duplicates
