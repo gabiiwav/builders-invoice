@@ -20,6 +20,9 @@ function getSupabase() {
 }
 
 function getTierFromPrice(priceId) {
+  console.log('ENV STRIPE_PRICE_PRO:', JSON.stringify(process.env.STRIPE_PRICE_PRO));
+  console.log('ENV STRIPE_PRICE_BUSINESS:', JSON.stringify(process.env.STRIPE_PRICE_BUSINESS));
+  console.log('Comparing price:', JSON.stringify(priceId));
   if (priceId === process.env.STRIPE_PRICE_PRO) return 'pro';
   if (priceId === process.env.STRIPE_PRICE_BUSINESS) return 'business';
   return null;
