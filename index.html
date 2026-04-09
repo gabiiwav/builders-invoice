@@ -1349,6 +1349,47 @@
 
   /* Expense modal */
   .exp-modal-overlay {
+
+  /* ══════════════════════════════════
+     SETTINGS — PLAN MANAGEMENT
+  ══════════════════════════════════ */
+  .plan-card { background:var(--ink); border-radius:12px; padding:24px; color:var(--white); margin-bottom:24px; }
+  .plan-card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .plan-current-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:2px; color:rgba(255,255,255,0.35); margin-bottom:6px; }
+  .plan-current-name { font-family:var(--font-display); font-size:28px; font-weight:800; letter-spacing:-0.5px; }
+  .plan-current-price { font-family:var(--font-mono); font-size:14px; color:rgba(255,255,255,0.5); margin-top:4px; }
+  .plan-current-badge { padding:5px 14px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.5px; }
+
+  .plan-features { display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; margin-bottom:20px; }
+  @media(max-width:500px) { .plan-features { grid-template-columns:1fr; } }
+  .plan-feature { font-size:13px; display:flex; align-items:center; gap:8px; padding:4px 0; }
+  .plan-feature .pf-icon { font-size:11px; width:18px; text-align:center; flex-shrink:0; }
+  .plan-feature.included { color:rgba(255,255,255,0.8); }
+  .plan-feature.included .pf-icon { color:var(--green); }
+  .plan-feature.locked { color:rgba(255,255,255,0.3); }
+  .plan-feature.locked .pf-icon { color:rgba(255,255,255,0.2); }
+
+  .plan-options { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @media(max-width:600px) { .plan-options { grid-template-columns:1fr; } }
+  .plan-option {
+    background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1); border-radius:10px;
+    padding:16px; text-align:center; cursor:pointer; transition:all 0.15s;
+  }
+  .plan-option:hover { border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); }
+  .plan-option.current { border-color:var(--amber); background:rgba(224,122,47,0.1); cursor:default; }
+  .plan-option-name { font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--white); margin-bottom:4px; }
+  .plan-option-price { font-family:var(--font-mono); font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:10px; }
+  .plan-option-btn {
+    display:inline-block; padding:8px 20px; border-radius:6px; font-family:var(--font-body);
+    font-size:12px; font-weight:700; border:none; cursor:pointer; transition:all 0.15s;
+  }
+  .plan-option-btn.btn-upgrade { background:var(--amber); color:var(--white); }
+  .plan-option-btn.btn-upgrade:hover { background:var(--amber-deep); }
+  .plan-option-btn.btn-current { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.4); cursor:default; }
+  .plan-option-btn.btn-downgrade { background:transparent; color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.15); }
+  .plan-option-btn.btn-downgrade:hover { color:var(--white); border-color:rgba(255,255,255,0.3); }
+
+  .exp-modal-overlay {
     position:fixed; inset:0; z-index:500; background:rgba(28,28,30,0.5); backdrop-filter:blur(4px);
     display:flex; align-items:center; justify-content:center;
   }
@@ -2520,6 +2561,9 @@
         <h1 class="page-title">Settings</h1>
         <p class="page-subtitle" style="font-size:14px;color:var(--gray);margin-top:4px;">Your business info auto-fills on every new quote.</p>
       </div>
+
+      <!-- Your Plan -->
+      <div id="settingsPlanCard"></div>
 
       <div class="card">
         <div class="card-header"><span class="card-label">Business Info</span></div>
@@ -5773,6 +5817,120 @@
 
     // Stripe Connect status
     updateStripeUI(data);
+
+    // Plan management
+    renderSettingsPlan();
+  }
+
+  // ══════════════════════════════════
+  //  SETTINGS — PLAN MANAGEMENT
+  // ══════════════════════════════════
+  function renderSettingsPlan() {
+    const tier = getUserTier();
+    const container = document.getElementById('settingsPlanCard');
+    if (!container) return;
+
+    const plans = {
+      free:     { name: 'Free', icon: '📋', price: '$0', priceSub: 'forever', color: 'rgba(255,255,255,0.4)' },
+      pro:      { name: 'Pro', icon: '⚡', price: '$49.99', priceSub: '/month', color: '#E07A2F' },
+      business: { name: 'Business', icon: '🚀', price: '$99.99', priceSub: '/month', color: '#6ee7b7' },
+    };
+    const current = plans[tier];
+
+    const allFeatures = [
+      { text: '3 quotes/month',           tiers: ['free'] },
+      { text: 'Unlimited quotes',          tiers: ['pro','business'] },
+      { text: 'Unlimited invoices',        tiers: ['pro','business'] },
+      { text: 'Basic templates',           tiers: ['free','pro','business'] },
+      { text: 'Customer database',         tiers: ['pro','business'] },
+      { text: 'Custom logo (no watermark)',tiers: ['pro','business'] },
+      { text: 'Email quotes & invoices',   tiers: ['pro','business'] },
+      { text: 'Payment tracking',          tiers: ['pro','business'] },
+      { text: 'Cloud sync',               tiers: ['pro','business'] },
+      { text: 'Expense tracking',          tiers: ['business'] },
+      { text: 'Profit & Loss reports',     tiers: ['business'] },
+      { text: 'Job profitability',         tiers: ['business'] },
+      { text: 'PDF financial exports',     tiers: ['business'] },
+      { text: 'Accept Stripe payments',    tiers: ['business'] },
+    ];
+
+    const featuresHtml = allFeatures.map(f => {
+      const has = f.tiers.includes(tier);
+      return `<div class="plan-feature ${has ? 'included' : 'locked'}"><span class="pf-icon">${has ? '✓' : '✗'}</span>${f.text}</div>`;
+    }).join('');
+
+    const tierOrder = { free: 0, pro: 1, business: 2 };
+    const optionsHtml = Object.keys(plans).map(key => {
+      const p = plans[key];
+      const isCurrent = key === tier;
+      const isUpgrade = tierOrder[key] > tierOrder[tier];
+      const isDowngrade = tierOrder[key] < tierOrder[tier];
+
+      let btnHtml;
+      if (isCurrent) {
+        btnHtml = '<span class="plan-option-btn btn-current">Current Plan</span>';
+      } else if (isUpgrade) {
+        btnHtml = `<button class="plan-option-btn btn-upgrade" onclick="handlePlanChange('${key}')">Upgrade →</button>`;
+      } else {
+        btnHtml = `<button class="plan-option-btn btn-downgrade" onclick="handlePlanChange('${key}')">Downgrade</button>`;
+      }
+
+      return `<div class="plan-option ${isCurrent ? 'current' : ''}" ${!isCurrent ? `onclick="handlePlanChange('${key}')"` : ''}>
+        <div style="font-size:1.2rem;margin-bottom:6px;">${p.icon}</div>
+        <div class="plan-option-name">${p.name}</div>
+        <div class="plan-option-price">${p.price}<span style="font-size:11px;"> ${p.priceSub}</span></div>
+        ${btnHtml}
+      </div>`;
+    }).join('');
+
+    // Quota info for free tier
+    let quotaHtml = '';
+    if (tier === 'free') {
+      const used = getQuotasThisMonth();
+      const pct = Math.min((used / FREE_QUOTE_LIMIT) * 100, 100);
+      quotaHtml = `<div style="margin-bottom:20px;padding:12px 16px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;color:rgba(255,255,255,0.6);white-space:nowrap;"><strong style="color:var(--white);">${used}</strong> / ${FREE_QUOTE_LIMIT} quotes this month</span>
+        <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${pct >= 100 ? 'var(--red)' : 'var(--amber)'};border-radius:3px;transition:width 0.3s;"></div>
+        </div>
+      </div>`;
+    }
+
+    container.innerHTML = `<div class="plan-card">
+      <div class="plan-card-top">
+        <div>
+          <div class="plan-current-label">Current Plan</div>
+          <div class="plan-current-name" style="color:${current.color};">${current.icon} ${current.name}</div>
+          <div class="plan-current-price">${current.price} ${current.priceSub}</div>
+        </div>
+        <span class="plan-current-badge" style="background:${current.color};color:${tier === 'free' ? 'var(--ink)' : 'var(--white)'};">${current.name}</span>
+      </div>
+      ${quotaHtml}
+      <div class="plan-features">${featuresHtml}</div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:10px;">Change Plan</div>
+      <div class="plan-options">${optionsHtml}</div>
+    </div>`;
+  }
+
+  function handlePlanChange(newTier) {
+    const tier = getUserTier();
+    const tierOrder = { free: 0, pro: 1, business: 2 };
+    const names = { free: 'Free', pro: 'Pro', business: 'Business' };
+    const isUpgrade = tierOrder[newTier] > tierOrder[tier];
+
+    if (isUpgrade) {
+      // TODO: Replace with Stripe checkout when ready
+      // For now, show confirmation
+      if (confirm(`Upgrade to ${names[newTier]}? This will open the payment page.`)) {
+        // Placeholder — wire Stripe checkout here
+        showToast('Stripe checkout coming soon — use the dev bar to test tiers');
+      }
+    } else {
+      if (confirm(`Downgrade to ${names[newTier]}? You'll lose access to ${tier === 'business' ? 'P&L, expense tracking, and ' : ''}features on your current plan.`)) {
+        // TODO: Replace with Stripe subscription update
+        showToast('Downgrade flow coming soon — use the dev bar to test tiers');
+      }
+    }
   }
 
   async function saveSettingsData() {
