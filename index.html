@@ -1278,6 +1278,34 @@
   .logo-remove:hover { text-decoration: underline; }
 
   /* ══════════════════════════════════
+     UPGRADE BANNER
+  ══════════════════════════════════ */
+  .upgrade-banner {
+    display:none; position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:9999;
+    background:var(--ink); color:var(--white); padding:14px 20px; border-radius:12px;
+    align-items:center; gap:14px; font-size:13px; box-shadow:0 8px 32px rgba(0,0,0,0.25);
+    max-width:500px; width:calc(100% - 32px);
+  }
+  .upgrade-banner.show { display:flex; animation: bannerIn 0.3s ease; }
+  @keyframes bannerIn { from{opacity:0;transform:translateX(-50%) translateY(-12px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+  .upgrade-banner .ub-msg { flex:1; line-height:1.5; }
+  .upgrade-banner .ub-msg strong { color:var(--amber); }
+  .upgrade-banner .ub-close {
+    background:none; border:none; color:rgba(255,255,255,0.4); font-size:18px; cursor:pointer; padding:4px;
+  }
+  .upgrade-banner .ub-close:hover { color:var(--white); }
+
+  /* Quota indicator on home page */
+  .quota-indicator {
+    display:flex; align-items:center; gap:10px; padding:10px 16px;
+    background:var(--canvas-alt); border-radius:8px; margin-bottom:16px; font-size:13px;
+  }
+  .quota-indicator .qi-bar { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .quota-indicator .qi-fill { height:100%; border-radius:3px; transition:width 0.3s; background:var(--amber); }
+  .quota-indicator .qi-fill.full { background:var(--red); }
+  .quota-indicator .qi-text { font-weight:600; color:var(--gray); white-space:nowrap; }
+
+  /* ══════════════════════════════════
      PAGE ROUTING
   ══════════════════════════════════ */
   .page-section { display: none; }
@@ -1867,7 +1895,7 @@
 
   <div class="nav-logo">
     <div class="nav-logo-text">Builders<span>Invoice</span></div>
-    <div class="nav-logo-plan">Pro Plan</div>
+    <div class="nav-logo-plan" id="navPlanLabel">Free Plan</div>
   </div>
 
   <a class="nav-item active" id="navHome" onclick="showPage('home')">
@@ -2858,6 +2886,69 @@
 
   // EmailJS
   try { emailjs.init('PcnA2CmC9QK_bs_bw'); } catch(e) { console.warn('EmailJS not loaded:', e); }
+
+  // ══════════════════════════════════
+  //  FREE TIER GATING
+  // ══════════════════════════════════
+  const FREE_QUOTE_LIMIT = 3;
+
+  function getUserTier() {
+    const p = _profileCache;
+    if (!p || !p.subscription_tier) return 'free';
+    return p.subscription_tier;
+  }
+
+  function isFree() { return getUserTier() === 'free'; }
+
+  // Quota: auto-resets if month has changed
+  function getQuotasThisMonth() {
+    const p = _profileCache;
+    if (!p) return 0;
+    const currentMonth = new Date().toISOString().slice(0, 7); // "2026-04"
+    if (p.quota_reset_month !== currentMonth) {
+      // Month rolled over — reset client-side and save
+      p.quotes_this_month = 0;
+      p.quota_reset_month = currentMonth;
+      sb.from('profiles').update({ quotes_this_month: 0, quota_reset_month: currentMonth }).eq('id', currentUser.id).then(() => {});
+    }
+    return p.quotes_this_month || 0;
+  }
+
+  function hasQuoteQuota() {
+    if (!isFree()) return true;
+    return getQuotasThisMonth() < FREE_QUOTE_LIMIT;
+  }
+
+  async function incrementQuoteQuota() {
+    if (!_profileCache) return;
+    const current = getQuotasThisMonth();
+    _profileCache.quotes_this_month = current + 1;
+    await sb.from('profiles').update({
+      quotes_this_month: current + 1,
+      quota_reset_month: new Date().toISOString().slice(0, 7)
+    }).eq('id', currentUser.id);
+  }
+
+  // Upgrade prompt — shows a toast-style banner
+  function showUpgradePrompt(message) {
+    const banner = document.getElementById('upgradeBanner');
+    if (!banner) return;
+    document.getElementById('upgradeBannerMsg').innerHTML = message;
+    banner.classList.add('show');
+    clearTimeout(banner._timer);
+    banner._timer = setTimeout(() => banner.classList.remove('show'), 5000);
+  }
+
+  // Update nav plan badge
+  function updateTierUI() {
+    const tier = getUserTier();
+    const label = document.getElementById('navPlanLabel');
+    if (label) {
+      const names = { free: 'Free Plan', pro: 'Pro Plan', business: 'Business Plan' };
+      label.textContent = names[tier] || 'Free Plan';
+      label.style.color = tier === 'free' ? 'rgba(255,255,255,0.3)' : (tier === 'pro' ? '#E07A2F' : '#6ee7b7');
+    }
+  }
 
   // ══════════════════════════════════
   //  SHARED DOCUMENT VIEWER
@@ -4276,6 +4367,8 @@
 
   ${attachHtml}
 
+  ${isFree() ? '<div style="text-align:center;padding:24px 0 12px;"><div style="font-size:11px;color:#B0ACA6;letter-spacing:1px;">Created with</div><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;font-weight:800;color:#B0ACA6;">Builders<span style=color:#E07A2F;>Invoice</span></div></div>' : ''}
+
   <!-- Footer -->
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;align-items:center;">
     <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:#1C1C1E;">${bizName ? escapeHtml(bizName) : 'Builders<span style=color:#E07A2F;>Invoice</span>'}</div>
@@ -4361,10 +4454,14 @@
   }
 
   async function saveQuote(status) {
+    const isNew = !currentQuoteId;
     const data = collectQuoteData(status);
     const quoteId = await dbSaveQuote(data, data.items);
     currentQuoteId = quoteId;
     data.id = quoteId;
+
+    // Increment free tier quota for new quotes
+    if (isNew && isFree()) await incrementQuoteQuota();
 
     // Save client
     if (data.clientName) {
@@ -4639,6 +4736,7 @@
       </td></tr></table>
       ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${escapeHtml(notes)}</div></div>` : ''}
       ${photosHtml}
+      ${isFree() ? '<div style="text-align:center;padding:20px 0 10px;"><div style="font-size:11px;color:#B0ACA6;letter-spacing:1px;">Created with</div><div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-size:16px;font-weight:800;color:#B0ACA6;letter-spacing:-0.3px;">Builders<span style="color:#E07A2F;">Invoice</span></div></div>' : ''}
       <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${escapeHtml(bizName) || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
     </div>`;
   }
@@ -4822,6 +4920,16 @@
   function showPage(page) {
     // Redirect old pages to jobs
     if (page === 'dashboard' || page === 'invoices') page = 'jobs';
+
+    // Free tier gates
+    if (page === 'clients' && isFree()) {
+      showUpgradePrompt('Customer database requires <strong>Pro</strong>. Upgrade to save and reuse client info.');
+      return;
+    }
+    if (page === 'invoice-edit' && isFree()) {
+      showUpgradePrompt('Invoicing requires <strong>Pro</strong>. Upgrade to create invoices and track payments.');
+      return;
+    }
 
     document.querySelectorAll('.page-section').forEach(p => p.style.display = 'none');
     const el = document.getElementById('page-' + page);
@@ -5089,9 +5197,38 @@
         </div>`
       ).join('');
     }
+
+    // Free tier quota indicator
+    let quotaEl = document.getElementById('homeQuotaBar');
+    if (isFree()) {
+      const used = getQuotasThisMonth();
+      const pct = Math.min((used / FREE_QUOTE_LIMIT) * 100, 100);
+      const full = used >= FREE_QUOTE_LIMIT;
+      if (!quotaEl) {
+        quotaEl = document.createElement('div');
+        quotaEl.id = 'homeQuotaBar';
+        const container = document.querySelector('#page-home .dash-container');
+        const header = container.querySelector('.page-header');
+        header.parentNode.insertBefore(quotaEl, header.nextSibling);
+      }
+      quotaEl.className = 'quota-indicator';
+      quotaEl.innerHTML = `
+        <span class="qi-text"><strong>${used}</strong> / ${FREE_QUOTE_LIMIT} quotes</span>
+        <div class="qi-bar"><div class="qi-fill ${full ? 'full' : ''}" style="width:${pct}%"></div></div>
+        <span style="font-size:11px;color:var(--gray);">Free Plan</span>
+      `;
+    } else if (quotaEl) {
+      quotaEl.remove();
+    }
   }
 
   function newQuote() {
+    // Free tier: 3 quotes/month limit
+    if (!hasQuoteQuota()) {
+      const used = getQuotasThisMonth();
+      showUpgradePrompt(`You've used all <strong>${used}/${FREE_QUOTE_LIMIT} free quotes</strong> this month. Upgrade to Pro for unlimited quotes.`);
+      return;
+    }
     currentQuoteId = null;
     try {
       document.querySelectorAll('#page-quote input:not([readonly]), #page-quote textarea').forEach(el => el.value = '');
@@ -5315,6 +5452,10 @@
   }
 
   async function convertToInvoiceFromDash(id) {
+    if (isFree()) {
+      showUpgradePrompt('Invoicing requires <strong>Pro</strong>. Upgrade to convert quotes to invoices.');
+      return;
+    }
     const quotes = getQuotes();
     const q = quotes.find(qt => qt.id === id);
     if (!q) return;
@@ -5883,6 +6024,11 @@
 
   // ── New / Edit / Save ──
   function newInvoice() {
+    // Free tier: no invoicing (payment tracking is Pro+)
+    if (isFree()) {
+      showUpgradePrompt('Invoicing and payment tracking require <strong>Pro</strong>. Upgrade to send invoices and track payments.');
+      return;
+    }
     try {
       currentInvId = null;
       document.querySelectorAll('#page-invoice-edit input:not([readonly]), #page-invoice-edit textarea').forEach(el => el.value = '');
@@ -6697,6 +6843,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     try { initItemGrids(); } catch(e) {}
     try { initInvItemGrids(); } catch(e) {}
     Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
+    updateTierUI();
     showPage('home');
     appInitialized = true;
   }
@@ -6761,6 +6908,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       try { initItemGrids(); } catch(e) {}
       try { initInvItemGrids(); } catch(e) {}
       Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
+      updateTierUI();
       showPage('home');
       appInitialized = true;
     } catch(e) {
@@ -6809,6 +6957,12 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     }
   });
 </script>
+
+<!-- Upgrade Banner -->
+<div class="upgrade-banner" id="upgradeBanner">
+  <span class="ub-msg" id="upgradeBannerMsg"></span>
+  <button class="ub-close" onclick="this.parentElement.classList.remove('show')">×</button>
+</div>
 
 <!-- Toast & Overlay -->
 <div class="toast" id="toast"><span class="toast-icon success">✓</span><span id="toastText"></span></div>
