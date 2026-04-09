@@ -5904,29 +5904,71 @@
       </div>
       ${quotaHtml}
       <div class="plan-features">${featuresHtml}</div>
+      ${tier !== 'free' ? '<div style="margin-bottom:16px;"><button onclick="openStripePortal()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);padding:10px 20px;border-radius:8px;font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color=\'#fff\';this.style.borderColor=\'rgba(255,255,255,0.3)\'" onmouseout="this.style.color=\'rgba(255,255,255,0.6)\';this.style.borderColor=\'rgba(255,255,255,0.15)\'">Manage Subscription →</button><span style="font-size:11px;color:rgba(255,255,255,0.3);margin-left:12px;">Update payment method, cancel, or view invoices</span></div>' : ''}
       <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.25);margin-bottom:10px;">Change Plan</div>
       <div class="plan-options">${optionsHtml}</div>
     </div>`;
   }
+
+  // ── Stripe Payment Links (replace with your actual links from Stripe Dashboard) ──
+  const STRIPE_PAYMENT_LINKS = {
+    pro:      'https://buy.stripe.com/test_6oU4gy1LhgYP6QnaZJ5Ne00',
+    business: 'https://buy.stripe.com/test_14A6oG4XtbEveiP1p95Ne03',
+  };
 
   function handlePlanChange(newTier) {
     const tier = getUserTier();
     const tierOrder = { free: 0, pro: 1, business: 2 };
     const names = { free: 'Free', pro: 'Pro', business: 'Business' };
     const isUpgrade = tierOrder[newTier] > tierOrder[tier];
+    const isDowngrade = tierOrder[newTier] < tierOrder[tier];
+
+    if (newTier === 'free' && tier !== 'free') {
+      // Downgrade to free = cancel subscription via Customer Portal
+      if (confirm('Cancel your subscription and downgrade to Free? You\'ll lose access to paid features at the end of your billing period.')) {
+        openStripePortal();
+      }
+      return;
+    }
 
     if (isUpgrade) {
-      // TODO: Replace with Stripe checkout when ready
-      // For now, show confirmation
-      if (confirm(`Upgrade to ${names[newTier]}? This will open the payment page.`)) {
-        // Placeholder — wire Stripe checkout here
-        showToast('Stripe checkout coming soon — use the dev bar to test tiers');
+      // New subscription via Payment Link
+      const link = STRIPE_PAYMENT_LINKS[newTier];
+      if (!link || link.includes('REPLACE_WITH')) {
+        showToast('Payment link not configured yet — set STRIPE_PAYMENT_LINKS');
+        return;
       }
-    } else {
-      if (confirm(`Downgrade to ${names[newTier]}? You'll lose access to ${tier === 'business' ? 'P&L, expense tracking, and ' : ''}features on your current plan.`)) {
-        // TODO: Replace with Stripe subscription update
-        showToast('Downgrade flow coming soon — use the dev bar to test tiers');
+      // Append user ID so webhook knows who to upgrade
+      const url = link + '?client_reference_id=' + encodeURIComponent(currentUser.id);
+      window.location.href = url;
+    } else if (isDowngrade) {
+      // Downgrade between paid tiers = manage via Customer Portal
+      if (confirm(`Downgrade to ${names[newTier]}? You can change your plan in the Stripe portal.`)) {
+        openStripePortal();
       }
+    }
+  }
+
+  async function openStripePortal() {
+    try {
+      showToast('Opening subscription manager…');
+      const resp = await fetch('/api/stripe-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          return_url: window.location.origin + window.location.pathname
+        })
+      });
+      const data = await resp.json();
+      if (data.error) {
+        showToast(data.error);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      console.error('Portal error:', e);
+      showToast('Could not open subscription manager');
     }
   }
 
