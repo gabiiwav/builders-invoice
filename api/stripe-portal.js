@@ -10,7 +10,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
+  process.env.SUPABASE_URL || 'https://tlsyajmdxyyainyabakt.supabase.co',
   process.env.SUPABASE_SERVICE_KEY
 );
 
