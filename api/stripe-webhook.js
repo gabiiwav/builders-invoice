@@ -20,12 +20,12 @@ function getSupabase() {
 }
 
 function getTierFromPrice(priceId) {
-  console.log('ENV STRIPE_PRICE_PRO:', JSON.stringify(process.env.STRIPE_PRICE_PRO));
-  console.log('ENV STRIPE_PRICE_BUSINESS:', JSON.stringify(process.env.STRIPE_PRICE_BUSINESS));
-  console.log('Comparing price:', JSON.stringify(priceId));
-  if (priceId === process.env.STRIPE_PRICE_PRO) return 'pro';
-  if (priceId === process.env.STRIPE_PRICE_BUSINESS) return 'business';
-  return null;
+  const PRICES = {
+    'price_1TKNZ4BimZ1XIzKT4QgWeblP': 'pro',
+    'price_1TKNZTBimZ1XIzKTu62QITm9': 'business',
+  };
+  console.log('Matching price:', priceId, '→', PRICES[priceId] || 'no match');
+  return PRICES[priceId] || null;
 }
 
 async function findUserByCustomer(supabase, customerId) {
