@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builders Invoice — Professional Quotes & Invoices for Contractors</title>
+<meta name="description" content="Create professional construction quotes in under 60 seconds. Built for contractors, roofers, electricians, plumbers, and every trade.">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1C1C1E;
+    --ink-soft: #2C2C30;
+    --canvas: #F5F2EE;
+    --canvas-alt: #EDEAE5;
+    --border: #E0DBD4;
+    --amber: #E07A2F;
+    --amber-deep: #C4621A;
+    --amber-pale: #FDF0E5;
+    --green: #2D7D52;
+    --green-pale: #E6F4ED;
+    --red: #C0392B;
+    --gray: #6B7280;
+    --white: #FFFFFF;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--canvas);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ═══ NAV ═══ */
+  .landing-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    background: rgba(245,242,238,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-brand {
+    font-family: var(--font-display); font-size: 20px; font-weight: 800;
+    color: var(--ink); letter-spacing: -0.5px; text-decoration: none;
+  }
+  .nav-brand span { color: var(--amber); }
+  .nav-links { display: flex; align-items: center; gap: 28px; }
+  .nav-links a {
+    font-size: 14px; font-weight: 600; color: var(--gray); text-decoration: none; transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    background: var(--ink); color: var(--white); padding: 10px 22px; border-radius: 8px;
+    font-family: var(--font-body); font-size: 14px; font-weight: 700; text-decoration: none;
+    transition: background 0.15s; border: none; cursor: pointer;
+  }
+  .nav-cta:hover { background: var(--ink-soft); }
+
+  @media(max-width:768px) {
+    .landing-nav { padding: 14px 16px; }
+    .nav-links a:not(.nav-cta) { display: none; }
+  }
+
+  /* ═══ HERO ═══ */
+  .hero {
+    padding: 140px 32px 80px; max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+  }
+  @media(max-width:900px) {
+    .hero { grid-template-columns: 1fr; padding: 120px 20px 60px; text-align: center; }
+  }
+  .hero-badge {
+    display: inline-block; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    background: var(--amber-pale); color: var(--amber-deep); margin-bottom: 20px; letter-spacing: 0.3px;
+  }
+  .hero h1 {
+    font-family: var(--font-display); font-size: clamp(36px, 5vw, 52px); font-weight: 800;
+    line-height: 1.1; letter-spacing: -1.5px; color: var(--ink); margin-bottom: 20px;
+  }
+  .hero h1 em { font-style: normal; color: var(--amber); }
+  .hero p {
+    font-size: 17px; color: var(--gray); line-height: 1.7; max-width: 480px; margin-bottom: 32px;
+  }
+  @media(max-width:900px) { .hero p { margin: 0 auto 32px; } }
+  .hero-buttons { display: flex; gap: 12px; }
+  @media(max-width:900px) { .hero-buttons { justify-content: center; } }
+  .btn-primary {
+    background: var(--amber); color: var(--white); padding: 14px 28px; border-radius: 10px;
+    font-family: var(--font-body); font-size: 16px; font-weight: 700; text-decoration: none;
+    transition: background 0.15s; border: none; cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--amber-deep); }
+  .btn-secondary {
+    background: var(--white); color: var(--ink); padding: 14px 28px; border-radius: 10px;
+    font-family: var(--font-body); font-size: 16px; font-weight: 600; text-decoration: none;
+    border: 1.5px solid var(--border); transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--ink); }
+  .hero-stats {
+    display: flex; gap: 32px; margin-top: 40px;
+  }
+  @media(max-width:900px) { .hero-stats { justify-content: center; } }
+  .hero-stat-value {
+    font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--ink);
+  }
+  .hero-stat-label { font-size: 12px; color: var(--gray); font-weight: 500; }
+
+  /* Hero mockup */
+  .hero-mockup {
+    background: var(--ink); border-radius: 16px; padding: 20px; box-shadow: 0 24px 64px rgba(28,28,30,0.2);
+    position: relative; overflow: hidden;
+  }
+  .mockup-bar {
+    display: flex; gap: 6px; margin-bottom: 16px;
+  }
+  .mockup-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.1); }
+  .mockup-dot:first-child { background: #ff5f57; }
+  .mockup-dot:nth-child(2) { background: #ffbd2e; }
+  .mockup-dot:nth-child(3) { background: #28c840; }
+  .mockup-content {
+    background: var(--canvas); border-radius: 10px; padding: 20px; font-size: 13px;
+  }
+  .mockup-row {
+    display: flex; justify-content: space-between; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .mockup-row:last-child { border-bottom: none; }
+  .mockup-row-name { font-weight: 600; color: var(--ink); }
+  .mockup-row-detail { font-size: 11px; color: var(--gray); }
+  .mockup-row-amount { font-family: var(--font-mono); font-weight: 600; color: var(--ink); }
+  .mockup-total {
+    display: flex; justify-content: space-between; padding: 14px 0 4px;
+    margin-top: 8px; border-top: 2px solid var(--ink);
+  }
+  .mockup-total-label { font-weight: 700; font-size: 14px; }
+  .mockup-total-value { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--amber); }
+  .mockup-btn {
+    margin-top: 14px; width: 100%; padding: 12px; background: var(--amber); color: white;
+    border: none; border-radius: 8px; font-family: var(--font-body); font-size: 14px; font-weight: 700;
+  }
+
+  /* ═══ SECTIONS ═══ */
+  .section {
+    padding: 80px 32px; max-width: 1100px; margin: 0 auto;
+  }
+  .section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px;
+    color: var(--amber); margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); font-weight: 800;
+    letter-spacing: -1px; line-height: 1.15; margin-bottom: 12px; color: var(--ink);
+  }
+  .section-sub { font-size: 16px; color: var(--gray); max-width: 560px; margin-bottom: 48px; }
+
+  /* ═══ TRADES ═══ */
+  .trades-grid {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .trade-tag {
+    padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    background: var(--white); border: 1.5px solid var(--border); color: var(--ink);
+    transition: all 0.15s;
+  }
+  .trade-tag:hover { border-color: var(--amber); background: var(--amber-pale); }
+
+  /* ═══ FEATURES ═══ */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  @media(max-width:768px) { .features-grid { grid-template-columns: 1fr; } }
+  .feature-card {
+    background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+    padding: 28px 24px; transition: all 0.2s;
+  }
+  .feature-card:hover { border-color: var(--amber); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+  .feature-icon { font-size: 28px; margin-bottom: 14px; }
+  .feature-title {
+    font-family: var(--font-display); font-size: 17px; font-weight: 700; margin-bottom: 8px;
+  }
+  .feature-desc { font-size: 14px; color: var(--gray); line-height: 1.6; }
+
+  /* ═══ STEPS ═══ */
+  .steps-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: step;
+  }
+  @media(max-width:768px) { .steps-grid { grid-template-columns: 1fr; } }
+  .step-card {
+    background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+    padding: 32px 24px; position: relative; counter-increment: step;
+  }
+  .step-num {
+    font-family: var(--font-display); font-size: 48px; font-weight: 800;
+    color: var(--canvas-alt); line-height: 1; margin-bottom: 16px;
+  }
+  .step-icon { font-size: 24px; margin-bottom: 12px; }
+  .step-title {
+    font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 8px;
+  }
+  .step-desc { font-size: 14px; color: var(--gray); line-height: 1.6; }
+
+  /* ═══ BUSINESS TIER HIGHLIGHT ═══ */
+  .biz-section {
+    background: var(--ink); border-radius: 20px; padding: 60px 48px; margin: 80px auto;
+    max-width: 1100px; color: var(--white); position: relative; overflow: hidden;
+  }
+  @media(max-width:768px) { .biz-section { padding: 40px 24px; margin: 60px 16px; border-radius: 16px; } }
+  .biz-section .section-label { color: var(--amber); }
+  .biz-section .section-title { color: var(--white); }
+  .biz-section .section-sub { color: rgba(255,255,255,0.5); }
+  .biz-features {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 36px;
+  }
+  @media(max-width:768px) { .biz-features { grid-template-columns: 1fr; } }
+  .biz-feature {
+    padding: 24px; border-radius: 12px; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .biz-feature-icon { font-size: 24px; margin-bottom: 10px; }
+  .biz-feature-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .biz-feature-desc { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+
+  /* ═══ PRICING ═══ */
+  .pricing-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start;
+  }
+  @media(max-width:768px) { .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; } }
+  .price-card {
+    background: var(--white); border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 32px 28px; position: relative; transition: all 0.2s;
+  }
+  .price-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+  .price-card.featured {
+    border-color: var(--amber); box-shadow: 0 12px 40px rgba(224,122,47,0.15);
+  }
+  .price-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--amber); color: var(--white); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.8px; text-transform: uppercase; padding: 4px 16px; border-radius: 20px;
+  }
+  .price-icon { font-size: 1.4rem; margin-bottom: 8px; }
+  .price-name { font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: 2px; }
+  .price-tagline { font-size: 13px; color: var(--gray); margin-bottom: 16px; }
+  .price-amount {
+    font-family: var(--font-mono); font-size: 36px; font-weight: 500; margin-bottom: 4px;
+  }
+  .price-period { font-size: 14px; color: var(--gray); margin-bottom: 24px; }
+  .price-features { list-style: none; margin-bottom: 28px; }
+  .price-features li {
+    font-size: 14px; padding: 6px 0; display: flex; align-items: center; gap: 10px;
+  }
+  .price-features li .pf-check { color: var(--green); font-size: 13px; flex-shrink: 0; width: 18px; }
+  .price-features li.locked { color: var(--gray); opacity: 0.5; text-decoration: line-through; }
+  .price-features li.locked .pf-check { color: var(--gray); }
+  .price-cta {
+    display: block; width: 100%; padding: 14px; border-radius: 8px; text-align: center;
+    font-family: var(--font-body); font-size: 15px; font-weight: 700; text-decoration: none;
+    transition: all 0.15s; border: none; cursor: pointer;
+  }
+  .price-cta-primary { background: var(--amber); color: var(--white); }
+  .price-cta-primary:hover { background: var(--amber-deep); }
+  .price-cta-dark { background: var(--ink); color: var(--white); }
+  .price-cta-dark:hover { background: var(--ink-soft); }
+  .price-cta-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+  .price-cta-outline:hover { border-color: var(--ink); }
+
+  /* ═══ TRUST BAR ═══ */
+  .trust-bar {
+    display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+    padding: 24px 0; margin-top: 48px; border-top: 1px solid var(--border);
+  }
+  .trust-item { font-size: 13px; color: var(--gray); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+
+  /* ═══ CTA BANNER ═══ */
+  .cta-banner {
+    text-align: center; padding: 80px 32px;
+  }
+  .cta-banner h2 {
+    font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); font-weight: 800;
+    letter-spacing: -1px; margin-bottom: 14px;
+  }
+  .cta-banner p { font-size: 17px; color: var(--gray); max-width: 520px; margin: 0 auto 32px; }
+
+  /* ═══ FOOTER ═══ */
+  .landing-footer {
+    text-align: center; padding: 32px; border-top: 1px solid var(--border);
+    font-size: 13px; color: var(--gray);
+  }
+  .landing-footer a { color: var(--ink); text-decoration: none; font-weight: 600; }
+  .landing-footer a span { color: var(--amber); }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-up { animation: fadeUp 0.6s ease both; }
+  .fade-up-1 { animation-delay: 0.1s; }
+  .fade-up-2 { animation-delay: 0.2s; }
+  .fade-up-3 { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="landing-nav">
+  <a href="#" class="nav-brand">Builders<span>Invoice</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#how">How It Works</a>
+    <a href="/index.html" class="nav-cta">Get Started Free</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="fade-up">
+    <div class="hero-badge">Now in beta — free for all trades</div>
+    <h1>Stop guessing.<br>Start <em>quoting.</em></h1>
+    <p>Professional construction quotes in under 60 seconds. Pick your line items, set your rates, send it off. Built by contractors, for contractors.</p>
+    <div class="hero-buttons">
+      <a href="/index.html" class="btn-primary">Create Your First Quote →</a>
+      <a href="#how" class="btn-secondary">See How It Works</a>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-value">60s</div>
+        <div class="hero-stat-label">Average quote time</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">6</div>
+        <div class="hero-stat-label">Trade categories</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">$0</div>
+        <div class="hero-stat-label">To get started</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-mockup fade-up fade-up-2">
+    <div class="mockup-bar"><div class="mockup-dot"></div><div class="mockup-dot"></div><div class="mockup-dot"></div></div>
+    <div class="mockup-content">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--gray);font-weight:600;margin-bottom:12px;">Quote Total</div>
+      <div class="mockup-row">
+        <div><div class="mockup-row-name">Roofing — Tear off & replace</div><div class="mockup-row-detail">2,400 sq ft × $4.50/sq ft</div></div>
+        <div class="mockup-row-amount">$10,800</div>
+      </div>
+      <div class="mockup-row">
+        <div><div class="mockup-row-name">Gutters & Downspouts</div><div class="mockup-row-detail">180 linear ft × $12.00/lf</div></div>
+        <div class="mockup-row-amount">$2,160</div>
+      </div>
+      <div class="mockup-row">
+        <div><div class="mockup-row-name">Soffit & Fascia Repair</div><div class="mockup-row-detail">65 linear ft × $18.00/lf</div></div>
+        <div class="mockup-row-amount">$1,170</div>
+      </div>
+      <div class="mockup-total">
+        <div class="mockup-total-label">Total</div>
+        <div class="mockup-total-value">$14,130</div>
+      </div>
+      <button class="mockup-btn">Send Quote →</button>
+    </div>
+  </div>
+</section>
+
+<!-- TRADES -->
+<section class="section">
+  <div class="section-label">Built For</div>
+  <div class="section-title">Every trade. Every job size.</div>
+  <div class="section-sub">Pre-built categories with trade-specific line items and units. Roofing measured in squares, fencing in linear feet, labor by the hour. Your quotes come out right because the tool already speaks your language.</div>
+  <div class="trades-grid">
+    <div class="trade-tag">🔨 General Contractor</div>
+    <div class="trade-tag">🏠 Roofing</div>
+    <div class="trade-tag">⚡ Electrical</div>
+    <div class="trade-tag">🔧 Plumbing</div>
+    <div class="trade-tag">❄️ HVAC</div>
+    <div class="trade-tag">🎨 Painting</div>
+    <div class="trade-tag">🪵 Flooring</div>
+    <div class="trade-tag">🌿 Landscaping</div>
+    <div class="trade-tag">🧹 Cleaning</div>
+    <div class="trade-tag">🛠️ Handyman</div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">Features</div>
+  <div class="section-title">Everything you need to quote,<br>invoice, and get paid.</div>
+  <div class="section-sub">No bloated project management. No 30-minute setup wizards. Open it, build a quote, send it.</div>
+  <div class="features-grid">
+    <div class="feature-card fade-up">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">60-Second Quotes</div>
+      <div class="feature-desc">Six trade categories with pre-built line items. Check the boxes, enter quantity and rate, done. No typing "Roofing — tear off and replace" for the hundredth time.</div>
+    </div>
+    <div class="feature-card fade-up fade-up-1">
+      <div class="feature-icon">📄</div>
+      <div class="feature-title">Professional PDFs</div>
+      <div class="feature-desc">One-click PDF generation with your logo, business info, and clean formatting. Your quotes look like you hired a designer. Because you kind of did.</div>
+    </div>
+    <div class="feature-card fade-up fade-up-2">
+      <div class="feature-icon">🔄</div>
+      <div class="feature-title">Quote → Invoice in One Click</div>
+      <div class="feature-desc">Client says yes? Convert that quote to an invoice instantly. All the line items, client info, and totals carry over. Zero re-typing.</div>
+    </div>
+    <div class="feature-card fade-up">
+      <div class="feature-icon">✉️</div>
+      <div class="feature-title">Email Directly</div>
+      <div class="feature-desc">Send quotes and invoices straight from the app. Your client gets a professional email with a link to view, download, or pay. No attachments to manage.</div>
+    </div>
+    <div class="feature-card fade-up fade-up-1">
+      <div class="feature-icon">💳</div>
+      <div class="feature-title">Get Paid by Card</div>
+      <div class="feature-desc">Connect Stripe and your invoices get a "Pay with Card" button. Clients pay online, you get the money in your bank. No more chasing checks.</div>
+    </div>
+    <div class="feature-card fade-up fade-up-2">
+      <div class="feature-icon">📱</div>
+      <div class="feature-title">Works Everywhere</div>
+      <div class="feature-desc">Cloud synced across every device. Start a quote on your phone at the job site, finish it on your laptop at home. Your data is always there.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="section-label">How It Works</div>
+  <div class="section-title">Three steps. Sixty seconds.</div>
+  <div class="section-sub">No training. No onboarding calls. If you can tap a checkbox, you can use this.</div>
+  <div class="steps-grid">
+    <div class="step-card fade-up">
+      <div class="step-num">01</div>
+      <div class="step-icon">☑️</div>
+      <div class="step-title">Pick Your Line Items</div>
+      <div class="step-desc">Open a trade category — Roofing, Electrical, Plumbing, whatever the job calls for. Check the items that apply. Enter quantity and your rate. The math handles itself.</div>
+    </div>
+    <div class="step-card fade-up fade-up-1">
+      <div class="step-num">02</div>
+      <div class="step-icon">📋</div>
+      <div class="step-title">Add Details & Send</div>
+      <div class="step-desc">Drop in client info, job address, notes, even photos of the work area. Hit Send to email it directly, or Save as PDF to print. Your quote looks professional either way.</div>
+    </div>
+    <div class="step-card fade-up fade-up-2">
+      <div class="step-num">03</div>
+      <div class="step-icon">💰</div>
+      <div class="step-title">Invoice & Get Paid</div>
+      <div class="step-desc">When the client accepts, convert to an invoice in one click. Track payment status. Connect Stripe so they can pay by card. You see the money in your bank — not a "pending" screen.</div>
+    </div>
+  </div>
+</section>
+
+<!-- BUSINESS TIER HIGHLIGHT -->
+<div class="biz-section">
+  <div class="section-label">Business Plan</div>
+  <div class="section-title" style="max-width:600px;">Know which jobs actually<br>make you money.</div>
+  <div class="section-sub">Most contractors know their revenue. Almost none know their profit. The Business plan gives you a full P&L dashboard — track expenses per job, see your margins, and export reports for tax time.</div>
+  <div class="biz-features">
+    <div class="biz-feature">
+      <div class="biz-feature-icon">📊</div>
+      <div class="biz-feature-title">Profit & Loss Dashboard</div>
+      <div class="biz-feature-desc">See revenue vs. expenses at a glance. Monthly breakdowns, lifetime totals, and a trend chart that shows if your business is growing or bleeding.</div>
+    </div>
+    <div class="biz-feature">
+      <div class="biz-feature-icon">🔍</div>
+      <div class="biz-feature-title">Job-Level Profitability</div>
+      <div class="biz-feature-desc">Click any job to see what you billed vs. what it cost you. Lumber, subcontractors, permits — every expense tied to the job that created it.</div>
+    </div>
+    <div class="biz-feature">
+      <div class="biz-feature-icon">🧾</div>
+      <div class="biz-feature-title">Expense Tracking</div>
+      <div class="biz-feature-desc">Log expenses in seconds. 10 trade-specific categories. Link them to jobs or file as overhead. Add receipt photos. Hand the PDF to your accountant at tax time.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div style="text-align:center;">
+    <div class="section-label">Pricing</div>
+    <div class="section-title">Start free. Upgrade when you're ready.</div>
+    <div class="section-sub" style="margin:0 auto 48px;">No credit card required. No contracts. Cancel anytime.</div>
+  </div>
+  <div class="pricing-grid">
+    <!-- Free -->
+    <div class="price-card">
+      <div class="price-icon">📋</div>
+      <div class="price-name">Free</div>
+      <div class="price-tagline">Try it out, no commitment</div>
+      <div class="price-amount">$0</div>
+      <div class="price-period">forever</div>
+      <ul class="price-features">
+        <li><span class="pf-check">✓</span>3 quotes per month</li>
+        <li><span class="pf-check">✓</span>Basic templates</li>
+        <li><span class="pf-check">✓</span>PDF generation</li>
+        <li class="locked"><span class="pf-check">✗</span>Watermark on prints</li>
+        <li class="locked"><span class="pf-check">✗</span>No invoicing</li>
+        <li class="locked"><span class="pf-check">✗</span>No client database</li>
+      </ul>
+      <a href="/index.html" class="price-cta price-cta-outline">Get Started Free</a>
+    </div>
+
+    <!-- Pro -->
+    <div class="price-card featured">
+      <div class="price-badge">Most Popular</div>
+      <div class="price-icon">⚡</div>
+      <div class="price-name">Pro</div>
+      <div class="price-tagline">For active contractors</div>
+      <div class="price-amount">$49.99</div>
+      <div class="price-period">/month</div>
+      <ul class="price-features">
+        <li><span class="pf-check">✓</span>Unlimited quotes & invoices</li>
+        <li><span class="pf-check">✓</span>Cloud sync across devices</li>
+        <li><span class="pf-check">✓</span>Customer database</li>
+        <li><span class="pf-check">✓</span>Custom logo — no watermark</li>
+        <li><span class="pf-check">✓</span>Email quotes & invoices</li>
+        <li><span class="pf-check">✓</span>Payment tracking</li>
+      </ul>
+      <a href="/index.html" class="price-cta price-cta-primary">Start Pro →</a>
+    </div>
+
+    <!-- Business -->
+    <div class="price-card">
+      <div class="price-icon">🚀</div>
+      <div class="price-name">Business</div>
+      <div class="price-tagline">Know your numbers</div>
+      <div class="price-amount">$99.99</div>
+      <div class="price-period">/month</div>
+      <ul class="price-features">
+        <li><span class="pf-check">✓</span>Everything in Pro</li>
+        <li><span class="pf-check">✓</span>Expense tracking</li>
+        <li><span class="pf-check">✓</span>Profit & Loss dashboard</li>
+        <li><span class="pf-check">✓</span>Job profitability reports</li>
+        <li><span class="pf-check">✓</span>PDF financial exports</li>
+        <li><span class="pf-check">✓</span>Accept Stripe card payments</li>
+      </ul>
+      <a href="/index.html" class="price-cta price-cta-dark">Start Business →</a>
+    </div>
+  </div>
+
+  <div class="trust-bar">
+    <div class="trust-item">🔒 SSL Encrypted</div>
+    <div class="trust-item">☁️ Cloud Backed Up</div>
+    <div class="trust-item">📱 Works on Any Device</div>
+    <div class="trust-item">🚫 No Credit Card Required</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-banner">
+  <h2>Stop losing money on bad estimates.</h2>
+  <p>Join contractors who quote faster, look more professional, and actually know which jobs are making them money.</p>
+  <a href="/index.html" class="btn-primary" style="font-size:18px;padding:16px 36px;">Create Your First Quote — Free →</a>
+</section>
+
+<!-- FOOTER -->
+<footer class="landing-footer">
+  <a href="#">Builders<span>Invoice</span></a>
+  <div style="margin-top:8px;">© 2026 Builders Invoice. Built for the trades.</div>
+</footer>
+
+</body>
+</html>
