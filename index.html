@@ -57,16 +57,16 @@
   }
   .nav-brand span { color: var(--amber); }
   .nav-links { display: flex; align-items: center; gap: 28px; }
-  .nav-links a {
+  .nav-links a:not(.nav-cta) {
     font-size: 14px; font-weight: 600; color: var(--gray); text-decoration: none; transition: color 0.15s;
   }
-  .nav-links a:hover { color: var(--ink); }
+  .nav-links a:not(.nav-cta):hover { color: var(--ink); }
   .nav-cta {
-    background: var(--amber); color: var(--white); padding: 10px 22px; border-radius: 8px;
+    background: var(--amber); color: #FFFFFF !important; padding: 10px 22px; border-radius: 8px;
     font-family: var(--font-body); font-size: 14px; font-weight: 700; text-decoration: none;
     transition: background 0.15s; border: none; cursor: pointer;
   }
-  .nav-cta:hover { background: var(--amber-deep); }
+  .nav-cta:hover { background: var(--amber-deep); color: #FFFFFF !important; }
 
   @media(max-width:768px) {
     .landing-nav { padding: 14px 16px; }
