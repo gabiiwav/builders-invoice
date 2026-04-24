@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Builders Invoice — Professional Quotes & Invoices for Contractors</title>
 <meta name="description" content="Create professional construction quotes in under 60 seconds. Built for contractors, roofers, electricians, plumbers, and every trade.">
+<script>
+  // Redirect app URLs (shared docs, payment callbacks) to the app
+  var p = new URLSearchParams(window.location.search);
+  if (p.get('doc') || p.get('payment')) {
+    window.location.href = '/app.html' + window.location.search;
+  }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,11 +62,11 @@
   }
   .nav-links a:hover { color: var(--ink); }
   .nav-cta {
-    background: var(--ink); color: var(--white); padding: 10px 22px; border-radius: 8px;
+    background: var(--amber); color: var(--white); padding: 10px 22px; border-radius: 8px;
     font-family: var(--font-body); font-size: 14px; font-weight: 700; text-decoration: none;
     transition: background 0.15s; border: none; cursor: pointer;
   }
-  .nav-cta:hover { background: var(--ink-soft); }
+  .nav-cta:hover { background: var(--amber-deep); }
 
   @media(max-width:768px) {
     .landing-nav { padding: 14px 16px; }
@@ -311,7 +318,7 @@
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
     <a href="#how">How It Works</a>
-    <a href="/index.html" class="nav-cta">Get Started Free</a>
+    <a href="/app.html" class="nav-cta">Get Started Free</a>
   </div>
 </nav>
 
@@ -322,7 +329,7 @@
     <h1>Stop guessing.<br>Start <em>quoting.</em></h1>
     <p>Professional construction quotes in under 60 seconds. Pick your line items, set your rates, send it off. Built by contractors, for contractors.</p>
     <div class="hero-buttons">
-      <a href="/index.html" class="btn-primary">Create Your First Quote →</a>
+      <a href="/app.html" class="btn-primary">Create Your First Quote →</a>
       <a href="#how" class="btn-secondary">See How It Works</a>
     </div>
     <div class="hero-stats">
@@ -497,7 +504,7 @@
         <li class="locked"><span class="pf-check">✗</span>No invoicing</li>
         <li class="locked"><span class="pf-check">✗</span>No client database</li>
       </ul>
-      <a href="/index.html" class="price-cta price-cta-outline">Get Started Free</a>
+      <a href="/app.html" class="price-cta price-cta-outline">Get Started Free</a>
     </div>
 
     <!-- Pro -->
@@ -516,7 +523,7 @@
         <li><span class="pf-check">✓</span>Email quotes & invoices</li>
         <li><span class="pf-check">✓</span>Payment tracking</li>
       </ul>
-      <a href="/index.html" class="price-cta price-cta-primary">Start Pro →</a>
+      <a href="/app.html" class="price-cta price-cta-primary">Start Pro →</a>
     </div>
 
     <!-- Business -->
@@ -534,7 +541,7 @@
         <li><span class="pf-check">✓</span>PDF financial exports</li>
         <li><span class="pf-check">✓</span>Accept Stripe card payments</li>
       </ul>
-      <a href="/index.html" class="price-cta price-cta-dark">Start Business →</a>
+      <a href="/app.html" class="price-cta price-cta-dark">Start Business →</a>
     </div>
   </div>
 
@@ -550,7 +557,7 @@
 <section class="cta-banner">
   <h2>Stop losing money on bad estimates.</h2>
   <p>Join contractors who quote faster, look more professional, and actually know which jobs are making them money.</p>
-  <a href="/index.html" class="btn-primary" style="font-size:18px;padding:16px 36px;">Create Your First Quote — Free →</a>
+  <a href="/app.html" class="btn-primary" style="font-size:18px;padding:16px 36px;">Create Your First Quote — Free →</a>
 </section>
 
 <!-- FOOTER -->
