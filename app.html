@@ -6050,8 +6050,8 @@
           amount_cents: Math.round(amountDollars * 100),
           description: description,
           stripe_account_id: stripeAccountId,
-          success_url: window.location.origin + '/?payment=success&invoice=' + invoiceId,
-          cancel_url: window.location.origin + '/?payment=cancelled&invoice=' + invoiceId
+          success_url: window.location.origin + '/app.html?payment=success&invoice=' + invoiceId,
+          cancel_url: window.location.origin + '/app.html?payment=cancelled&invoice=' + invoiceId
         })
       });
       const data = await resp.json();
