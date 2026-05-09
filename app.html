@@ -610,6 +610,77 @@
   .line-note-input:focus { border-color: var(--amber); background: var(--white); }
   .line-note-input::placeholder { color: #B0ACA6; }
 
+  /* Line item type badge & markup */
+  .line-type-badge {
+    display:inline-flex; align-items:center; justify-content:center; padding:3px 8px; border-radius:4px;
+    font-size:9px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+    transition:all 0.15s; border:1.5px solid transparent; white-space:nowrap; user-select:none;
+  }
+  .line-type-badge.type-material { background:rgba(45,125,82,0.1); color:var(--green); border-color:rgba(45,125,82,0.2); }
+  .line-type-badge.type-material:hover { background:rgba(45,125,82,0.2); }
+  .line-type-badge.type-labor { background:rgba(59,130,246,0.1); color:#3B82F6; border-color:rgba(59,130,246,0.2); }
+  .line-type-badge.type-labor:hover { background:rgba(59,130,246,0.2); }
+
+  .line-markup-btn {
+    background:none; border:none; cursor:pointer; font-size:12px; padding:4px 6px;
+    opacity:0.35; transition:opacity 0.15s; border-radius:4px; flex-shrink:0;
+  }
+  .line-markup-btn:hover { opacity:1; background:var(--amber-pale); }
+  .line-markup-btn.active { opacity:1; color:var(--amber); }
+
+  .line-markup-row {
+    grid-column:1 / -1; display:none; padding:0 0 10px 0;
+  }
+  .line-markup-row.show { display:block; }
+  .markup-inner {
+    display:flex; align-items:center; gap:8px; padding:8px 12px;
+    background:rgba(224,122,47,0.06); border-radius:6px; border:1px solid rgba(224,122,47,0.1);
+    font-size:12px;
+  }
+  .markup-label { font-size:10px; font-weight:600; color:var(--gray); text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
+  .markup-input {
+    width:60px; padding:4px 8px; border:1.5px solid var(--border); border-radius:4px;
+    font-family:var(--font-mono); font-size:12px; color:var(--ink); background:var(--canvas);
+    outline:none; text-align:center;
+  }
+  .markup-input:focus { border-color:var(--amber); background:var(--white); }
+  .markup-mode-toggle {
+    display:flex; gap:2px; background:var(--canvas-alt); border-radius:4px; padding:2px;
+  }
+  .markup-mode-btn {
+    padding:3px 8px; border-radius:3px; border:none; font-family:var(--font-mono);
+    font-size:11px; font-weight:600; cursor:pointer; color:var(--gray); background:transparent;
+    transition:all 0.12s;
+  }
+  .markup-mode-btn.active { background:var(--white); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+  .markup-result {
+    font-family:var(--font-mono); font-size:12px; color:var(--amber-deep); font-weight:600;
+    margin-left:auto; white-space:nowrap;
+  }
+
+  .items-section-header {
+    display:flex; align-items:center; gap:8px; padding:10px 24px; background:var(--canvas);
+    border-bottom:1px solid var(--border-soft); font-size:11px; font-weight:600;
+    text-transform:uppercase; letter-spacing:1.5px; color:var(--gray);
+  }
+  .items-section-header .ish-icon { font-size:13px; }
+  .items-section-header .ish-total { margin-left:auto; font-family:var(--font-mono); font-size:12px; }
+
+  /* Totals: material/labor subtotals */
+  .totals-section-row { display:flex; justify-content:space-between; padding:4px 0; }
+  .totals-section-label { font-size:12px; color:rgba(255,255,255,0.35); }
+  .totals-section-value { font-family:var(--font-mono); font-size:12px; color:rgba(255,255,255,0.5); }
+
+  .tax-scope-toggle {
+    display:flex; gap:2px; background:rgba(255,255,255,0.08); border-radius:4px; padding:2px; margin-top:4px;
+  }
+  .tax-scope-btn {
+    padding:3px 8px; border-radius:3px; border:none; font-size:10px; font-weight:600;
+    cursor:pointer; color:rgba(255,255,255,0.4); background:transparent; transition:all 0.12s;
+    font-family:var(--font-body);
+  }
+  .tax-scope-btn.active { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.8); }
+
   .line-items-footer {
     padding: 12px 24px;
     border-top: 1px solid var(--border-soft);
@@ -1370,10 +1441,11 @@
   @media(max-width:600px) { .plan-options { grid-template-columns:1fr; } }
   .plan-option {
     background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1); border-radius:10px;
-    padding:16px; text-align:center; cursor:pointer; transition:all 0.15s;
+    padding:16px; text-align:center; cursor:pointer; transition:all 0.2s; overflow:hidden;
   }
   .plan-option:hover { border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); }
-  .plan-option.current { border-color:var(--amber); background:rgba(224,122,47,0.1); cursor:default; }
+  .plan-option.current { border-color:var(--amber); background:rgba(224,122,47,0.1); }
+  .plan-option.expanded { border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); }
   .plan-option-name { font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--white); margin-bottom:4px; }
   .plan-option-price { font-family:var(--font-mono); font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:10px; }
   .plan-option-btn {
@@ -1385,6 +1457,18 @@
   .plan-option-btn.btn-current { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.4); cursor:default; }
   .plan-option-btn.btn-downgrade { background:transparent; color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.15); }
   .plan-option-btn.btn-downgrade:hover { color:var(--white); border-color:rgba(255,255,255,0.3); }
+  .plan-option-details {
+    max-height:0; overflow:hidden; transition:max-height 0.3s ease; text-align:left;
+  }
+  .plan-option.expanded .plan-option-details { max-height:400px; }
+  .plan-option-details-inner { padding-top:14px; margin-top:14px; border-top:1px solid rgba(255,255,255,0.08); }
+  .plan-option-feat { font-size:12px; padding:4px 0; display:flex; align-items:center; gap:8px; }
+  .plan-option-feat.has { color:rgba(255,255,255,0.75); }
+  .plan-option-feat.has .pof-icon { color:var(--green); }
+  .plan-option-feat.missing { color:rgba(255,255,255,0.25); }
+  .plan-option-feat.missing .pof-icon { color:rgba(255,255,255,0.15); }
+  .pof-icon { font-size:11px; width:16px; text-align:center; flex-shrink:0; }
+  .plan-option-toggle { font-size:10px; color:rgba(255,255,255,0.3); margin-top:8px; }
 
   .exp-modal-overlay {
     position:fixed; inset:0; z-index:500; background:rgba(28,28,30,0.5); backdrop-filter:blur(4px);
@@ -2432,6 +2516,15 @@
         <div class="totals-panel-body">
           <div class="totals-mobile-wrap">
 
+            <div class="totals-section-row" id="materialSubRow" style="display:none;">
+              <span class="totals-section-label">Materials</span>
+              <span class="totals-section-value" id="materialSubtotal">$0.00</span>
+            </div>
+            <div class="totals-section-row" id="laborSubRow" style="display:none;">
+              <span class="totals-section-label">Labor</span>
+              <span class="totals-section-value" id="laborSubtotal">$0.00</span>
+            </div>
+
             <div class="totals-row">
               <span class="totals-row-label">Subtotal</span>
               <span class="totals-row-value" id="subtotalDisplay">$0.00</span>
@@ -2443,8 +2536,14 @@
                 <button class="toggle-switch" id="taxToggle" onclick="toggleTax()"></button>
               </div>
               <div id="taxRateWrap" style="display:none;align-items:center;gap:5px;">
-                <input type="number" class="tax-rate-input" id="taxRateInput" value="8" min="0" max="30" step="0.5" oninput="calculate()">
+                <input type="number" class="tax-rate-input" id="taxRateInput" value="8" min="0" max="30" step="0.5" oninput="calcAll()">
                 <span style="font-size:12px;color:rgba(255,255,255,0.4);">%</span>
+              </div>
+            </div>
+            <div id="taxScopeWrap" style="display:none;padding:2px 0 6px;">
+              <div class="tax-scope-toggle">
+                <button class="tax-scope-btn active" onclick="setTaxScope('all',this)">All Items</button>
+                <button class="tax-scope-btn" onclick="setTaxScope('materials',this)">Materials Only</button>
               </div>
             </div>
             <div class="totals-row" id="taxRow" style="display:none;">
@@ -2879,6 +2978,14 @@
           <div class="totals-panel-header"><span class="totals-panel-label">Invoice Total</span></div>
           <div class="totals-panel-body">
             <div class="totals-mobile-wrap">
+              <div class="totals-section-row" id="invMaterialSubRow" style="display:none;">
+                <span class="totals-section-label">Materials</span>
+                <span class="totals-section-value" id="invMaterialSubtotal">$0.00</span>
+              </div>
+              <div class="totals-section-row" id="invLaborSubRow" style="display:none;">
+                <span class="totals-section-label">Labor</span>
+                <span class="totals-section-value" id="invLaborSubtotal">$0.00</span>
+              </div>
               <div class="totals-row">
                 <span class="totals-row-label">Subtotal</span>
                 <span class="totals-row-value" id="invSubtotal">$0.00</span>
@@ -2890,6 +2997,12 @@
                 <div id="invTaxRateWrap" style="display:none;align-items:center;gap:5px;">
                   <input type="number" class="tax-rate-input" id="invTaxRateInput" value="8" min="0" max="30" step="0.5" oninput="calcInvTotals()">
                   <span style="font-size:12px;color:rgba(255,255,255,0.4);">%</span>
+                </div>
+              </div>
+              <div id="invTaxScopeWrap" style="display:none;padding:2px 0 6px;">
+                <div class="tax-scope-toggle">
+                  <button class="tax-scope-btn active" onclick="setInvTaxScope('all',this)">All Items</button>
+                  <button class="tax-scope-btn" onclick="setInvTaxScope('materials',this)">Materials Only</button>
                 </div>
               </div>
               <div class="totals-row" id="invTaxRow" style="display:none;">
@@ -3178,7 +3291,7 @@
     document.getElementById('upgradeBannerMsg').innerHTML = message;
     banner.classList.add('show');
     clearTimeout(banner._timer);
-    banner._timer = setTimeout(() => banner.classList.remove('show'), 5000);
+    banner._timer = setTimeout(() => banner.classList.remove('show'), 8000);
   }
 
   // Update nav plan badge
@@ -3925,12 +4038,24 @@
   // ══════════════════════════════════
   let lineCounter = 0;
 
+  function guessLineType(unit, desc) {
+    const laborUnits = ['hr','job'];
+    const laborWords = ['labor','install','demo','cleanup','travel','management','repair','service'];
+    if (laborUnits.includes(unit)) return 'labor';
+    if (desc && laborWords.some(w => desc.toLowerCase().includes(w))) return 'labor';
+    return 'material';
+  }
+
   function addLine(description, unit) {
     lineCounter++;
     const body = document.getElementById('lineItemsBody');
     const row = document.createElement('div');
     row.className = 'line-item-row' + (description ? ' from-accordion' : '');
     row.dataset.id = lineCounter;
+    row.dataset.lineType = guessLineType(unit || 'each', description || '');
+    row.dataset.markupEnabled = 'false';
+    row.dataset.markupMode = 'percent';
+    row.dataset.markupValue = '0';
     if (description) row.dataset.sourceName = description;
 
     const unitVal = unit || 'each';
@@ -3939,9 +4064,13 @@
       `<option value="${u}"${u === unitVal ? ' selected' : ''}>${u}</option>`
     ).join('');
 
+    const typeCls = row.dataset.lineType === 'labor' ? 'type-labor' : 'type-material';
+    const typeLabel = row.dataset.lineType === 'labor' ? 'Labor' : 'Material';
+
     row.innerHTML = `
-      <div class="line-desc-wrap">
-        <input type="text" placeholder="Type or pick from suggestions…" value="${description ? escapeHtml(description) : ''}">
+      <div class="line-desc-wrap" style="display:flex;align-items:center;gap:6px;">
+        <span class="line-type-badge ${typeCls}" onclick="toggleLineType(this)" title="Click to switch Material/Labor">${typeLabel}</span>
+        <input type="text" placeholder="Type or pick from suggestions…" value="${description ? escapeHtml(description) : ''}" style="flex:1;">
       </div>
       <select class="unit-select" onchange="updateUnit(this)">
         ${optionsHtml}
@@ -3950,19 +4079,94 @@
         <input type="number" placeholder="1" value="" min="0" step="0.01" oninput="syncToAccordion(this)">
         <span class="qty-suffix">${unitVal}</span>
       </div>
-      <input type="number" placeholder="0.00" value="" min="0" step="0.01" oninput="syncToAccordion(this)">
+      <input type="number" placeholder="0.00" value="" min="0" step="0.01" oninput="syncToAccordion(this)" data-role="rate">
       <div class="line-total">$0.00</div>
-      <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
+      <div style="display:flex;gap:2px;">
+        <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
+        <button class="line-markup-btn" onclick="toggleLineMarkup(this)" title="Add markup">%</button>
+      </div>
       <button class="line-remove" onclick="removeLine(this)" title="Remove">×</button>
       <div class="line-note-row" style="display:none;">
         <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…">
       </div>
+      <div class="line-markup-row">
+        <div class="markup-inner">
+          <span class="markup-label">Your Cost</span>
+          <span class="markup-cost" style="font-family:var(--font-mono);font-size:12px;color:var(--ink);">$0.00</span>
+          <span class="markup-label" style="margin-left:8px;">Markup</span>
+          <div class="markup-mode-toggle">
+            <button class="markup-mode-btn active" onclick="setMarkupMode(this,'percent')">%</button>
+            <button class="markup-mode-btn" onclick="setMarkupMode(this,'flat')">$</button>
+          </div>
+          <input class="markup-input" type="number" placeholder="0" min="0" step="0.5" value="" oninput="calcMarkup(this)">
+          <span class="markup-label">→</span>
+          <span class="markup-result">Client: $0.00</span>
+        </div>
+      </div>
     `;
     body.appendChild(row);
 
-    // Wire autocomplete on the description input
     const descInput = row.querySelector('.line-desc-wrap input');
     wireAutocomplete(descInput);
+  }
+
+  function toggleLineType(badge) {
+    const row = badge.closest('.line-item-row');
+    if (row.dataset.lineType === 'material') {
+      row.dataset.lineType = 'labor';
+      badge.textContent = 'Labor';
+      badge.className = 'line-type-badge type-labor';
+    } else {
+      row.dataset.lineType = 'material';
+      badge.textContent = 'Material';
+      badge.className = 'line-type-badge type-material';
+    }
+    calcAll();
+  }
+
+  function toggleLineMarkup(btn) {
+    const row = btn.closest('.line-item-row');
+    const markupRow = row.querySelector('.line-markup-row');
+    const isActive = markupRow.classList.contains('show');
+    if (isActive) {
+      markupRow.classList.remove('show');
+      btn.classList.remove('active');
+      row.dataset.markupEnabled = 'false';
+      row.dataset.markupValue = '0';
+      row.querySelector('.markup-input').value = '';
+    } else {
+      markupRow.classList.add('show');
+      btn.classList.add('active');
+      row.dataset.markupEnabled = 'true';
+      row.querySelector('.markup-input').focus();
+    }
+    calcAll();
+  }
+
+  function setMarkupMode(btn, mode) {
+    const row = btn.closest('.line-item-row');
+    row.dataset.markupMode = mode;
+    btn.parentElement.querySelectorAll('.markup-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    calcMarkup(row.querySelector('.markup-input'));
+  }
+
+  function calcMarkup(input) {
+    const row = input.closest('.line-item-row');
+    row.dataset.markupValue = input.value || '0';
+    calcAll();
+  }
+
+  function getLineClientRate(row) {
+    const rateInput = row.querySelector('[data-role="rate"]');
+    const baseCost = parseFloat(rateInput?.value) || 0;
+    if (row.dataset.markupEnabled !== 'true') return baseCost;
+    const markupVal = parseFloat(row.dataset.markupValue) || 0;
+    if (row.dataset.markupMode === 'percent') {
+      return baseCost * (1 + markupVal / 100);
+    } else {
+      return baseCost + markupVal;
+    }
   }
 
   function removeLine(btn) {
@@ -4066,22 +4270,43 @@
   // ══════════════════════════════════
   //  CALCULATE
   // ══════════════════════════════════
+  let taxScope = 'all'; // 'all' or 'materials'
+
   function calcAll() {
     let grandTotal = 0;
+    let materialTotal = 0;
+    let laborTotal = 0;
     let totalItems = 0;
 
     // Line items table
-    document.querySelectorAll('.line-item-row').forEach(row => {
+    document.querySelectorAll('#lineItemsBody .line-item-row').forEach(row => {
       const inputs = row.querySelectorAll('input[type="number"]');
-      const qty = parseFloat(inputs[0].value) || 0;
-      const rate = parseFloat(inputs[1].value) || 0;
-      const amount = qty * rate;
+      const qty = parseFloat(inputs[0]?.value) || 0;
+      const baseCost = parseFloat(row.querySelector('[data-role="rate"]')?.value) || 0;
+      const clientRate = getLineClientRate(row);
+      const amount = qty * clientRate;
+
       row.querySelector('.line-total').textContent = amount > 0 ? formatMoney(amount) : '$0.00';
+
+      // Update markup display
+      if (row.dataset.markupEnabled === 'true') {
+        const costEl = row.querySelector('.markup-cost');
+        const resultEl = row.querySelector('.markup-result');
+        if (costEl) costEl.textContent = formatMoney(baseCost);
+        if (resultEl) resultEl.textContent = 'Client: ' + formatMoney(clientRate) + '/unit';
+      }
+
+      // Track by type
+      if (row.dataset.lineType === 'labor') {
+        laborTotal += amount;
+      } else {
+        materialTotal += amount;
+      }
       grandTotal += amount;
       if (amount > 0) totalItems++;
     });
 
-    // Accordion items (for category subtotals display only — not double-counted)
+    // Accordion items (for category subtotals display only)
     document.querySelectorAll('.cat-section[data-cat]').forEach(section => {
       let catTotal = 0;
       section.querySelectorAll('.item-card.checked').forEach(card => {
@@ -4105,11 +4330,25 @@
     document.getElementById('subtotalDisplay').textContent = formatMoney(grandTotal);
     document.getElementById('sidebarLineCount').textContent = totalItems;
 
+    // Section subtotals
+    const matSubEl = document.getElementById('materialSubtotal');
+    const labSubEl = document.getElementById('laborSubtotal');
+    if (matSubEl) matSubEl.textContent = formatMoney(materialTotal);
+    if (labSubEl) labSubEl.textContent = formatMoney(laborTotal);
+
+    // Show/hide section rows
+    const matRow = document.getElementById('materialSubRow');
+    const labRow = document.getElementById('laborSubRow');
+    if (matRow) matRow.style.display = (materialTotal > 0 || laborTotal > 0) ? 'flex' : 'none';
+    if (labRow) labRow.style.display = (materialTotal > 0 || laborTotal > 0) ? 'flex' : 'none';
+
     let taxAmt = 0;
     if (taxEnabled) {
       const taxRate = parseFloat(document.getElementById('taxRateInput').value) || 0;
-      taxAmt = grandTotal * (taxRate / 100);
-      document.getElementById('taxLabel').textContent = `Tax (${taxRate}%)`;
+      const taxableAmount = taxScope === 'materials' ? materialTotal : grandTotal;
+      taxAmt = taxableAmount * (taxRate / 100);
+      const scopeLabel = taxScope === 'materials' ? ' (materials)' : '';
+      document.getElementById('taxLabel').textContent = `Tax (${taxRate}%)${scopeLabel}`;
       document.getElementById('taxDisplay').textContent = formatMoney(taxAmt);
     }
     document.getElementById('totalDisplay').textContent = formatMoney(grandTotal + taxAmt);
@@ -4120,6 +4359,14 @@
     document.getElementById('taxToggle').classList.toggle('on', taxEnabled);
     document.getElementById('taxRateWrap').style.display = taxEnabled ? 'flex' : 'none';
     document.getElementById('taxRow').style.display = taxEnabled ? 'flex' : 'none';
+    document.getElementById('taxScopeWrap').style.display = taxEnabled ? '' : 'none';
+    calcAll();
+  }
+
+  function setTaxScope(scope, btn) {
+    taxScope = scope;
+    btn.parentElement.querySelectorAll('.tax-scope-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
     calcAll();
   }
 
@@ -4467,8 +4714,9 @@
     const bizAddress = document.getElementById('bizAddress').value || '';
     const bizLicense = document.getElementById('bizLicense').value || '';
 
-    // Gather line items from Items table
-    let lineItemsHtml = '';
+    // Gather line items from Items table, grouped by type
+    let materialItemsHtml = '';
+    let laborItemsHtml = '';
     const quoteRows = document.querySelectorAll('#lineItemsBody .line-item-row');
     quoteRows.forEach(row => {
       const descInput = row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]');
@@ -4477,21 +4725,31 @@
       const unit = row.querySelector('.unit-select')?.value || 'each';
       const numInputs = row.querySelectorAll('input[type="number"]');
       const qty = parseFloat(numInputs[0]?.value) || 0;
-      const rate = parseFloat(numInputs[1]?.value) || 0;
-      const amount = qty * rate;
+      const clientRate = getLineClientRate(row);
+      const amount = qty * clientRate;
       const note = row.querySelector('.line-note-input')?.value || '';
-      lineItemsHtml += `
+      const lineType = row.dataset.lineType || 'material';
+      const rowHtml = `
         <tr>
           <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#1C1C1E;">${escapeHtml(desc)}</td>
           <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#6B7280;text-align:center;">${escapeHtml(unit)}</td>
           <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:center;">${qty}</td>
-          <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${rate.toFixed(2)}</td>
+          <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${clientRate.toFixed(2)}</td>
           <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
         </tr>`;
-      if (note) {
-        lineItemsHtml += `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>`;
-      }
+      const noteHtml = note ? `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>` : '';
+      if (lineType === 'labor') { laborItemsHtml += rowHtml + noteHtml; }
+      else { materialItemsHtml += rowHtml + noteHtml; }
     });
+
+    // Build combined items with section headers
+    let lineItemsHtml = '';
+    if (materialItemsHtml && laborItemsHtml) {
+      lineItemsHtml = `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Materials</td></tr>` + materialItemsHtml;
+      lineItemsHtml += `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Labor</td></tr>` + laborItemsHtml;
+    } else {
+      lineItemsHtml = materialItemsHtml + laborItemsHtml;
+    }
 
     // Gather attachments
     let attachHtml = '';
@@ -4650,11 +4908,20 @@
     document.querySelectorAll('#lineItemsBody .line-item-row').forEach(row => {
       const desc = row.querySelector('input[type="text"]')?.value || '';
       const unit = row.querySelector('.unit-select')?.value || 'each';
-      const inputs = row.querySelectorAll('input[type="number"]');
-      const qty = inputs[0]?.value || '';
-      const rate = inputs[1]?.value || '';
+      const rateInput = row.querySelector('[data-role="rate"]');
+      const qtyInputs = row.querySelectorAll('input[type="number"]');
+      const qty = qtyInputs[0]?.value || '';
+      const rate = rateInput?.value || '';
       const note = row.querySelector('.line-note-input')?.value || '';
-      if (desc || qty || rate) items.push({ desc, unit, qty, rate, note, source: row.dataset.sourceName || '' });
+      const lineType = row.dataset.lineType || 'material';
+      const markupEnabled = row.dataset.markupEnabled === 'true';
+      const markupMode = row.dataset.markupMode || 'percent';
+      const markupValue = row.dataset.markupValue || '0';
+      const clientRate = getLineClientRate(row);
+      if (desc || qty || rate) items.push({
+        desc, unit, qty, rate, note, source: row.dataset.sourceName || '',
+        lineType, markupEnabled, markupMode, markupValue, clientRate
+      });
     });
 
     // Collect accordion checked items (for restoring state)
@@ -4986,12 +5253,28 @@
   function buildPaymentHandlesHtml() {
     const handles = _profileCache?.payment_handles || {};
     const items = [];
-    if (handles.cashapp) items.push(`<span style="margin-right:16px;">💵 CashApp: <strong>${escapeHtml(handles.cashapp)}</strong></span>`);
-    if (handles.venmo) items.push(`<span style="margin-right:16px;">💙 Venmo: <strong>${escapeHtml(handles.venmo)}</strong></span>`);
-    if (handles.paypal) items.push(`<span style="margin-right:16px;">🅿️ PayPal: <strong>${escapeHtml(handles.paypal)}</strong></span>`);
-    if (handles.zelle) items.push(`<span style="margin-right:16px;">⚡ Zelle: <strong>${escapeHtml(handles.zelle)}</strong></span>`);
+    if (handles.cashapp) {
+      const tag = escapeHtml(handles.cashapp);
+      const url = 'https://cash.app/' + encodeURIComponent(handles.cashapp.replace(/^\$/, '$'));
+      items.push(`<div style="margin-bottom:6px;">💵 CashApp: <a href="${url}" target="_blank" style="color:#00D632;font-weight:700;text-decoration:none;">${tag}</a></div>`);
+    }
+    if (handles.venmo) {
+      const tag = escapeHtml(handles.venmo);
+      const clean = handles.venmo.replace(/^@/, '');
+      const url = 'https://venmo.com/' + encodeURIComponent(clean);
+      items.push(`<div style="margin-bottom:6px;">💙 Venmo: <a href="${url}" target="_blank" style="color:#3D95CE;font-weight:700;text-decoration:none;">${tag}</a></div>`);
+    }
+    if (handles.paypal) {
+      const tag = escapeHtml(handles.paypal);
+      const clean = handles.paypal.replace(/^@/, '');
+      const url = 'https://paypal.me/' + encodeURIComponent(clean);
+      items.push(`<div style="margin-bottom:6px;">🅿️ PayPal: <a href="${url}" target="_blank" style="color:#003087;font-weight:700;text-decoration:none;">${tag}</a></div>`);
+    }
+    if (handles.zelle) {
+      items.push(`<div style="margin-bottom:6px;">⚡ Zelle: <strong>${escapeHtml(handles.zelle)}</strong></div>`);
+    }
     if (items.length === 0) return '';
-    return `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;border-radius:6px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:8px;">Payment Info</div><div style="font-size:13px;line-height:2;">${items.join('')}</div></div>`;
+    return `<div style="margin-top:20px;padding:16px 20px;background:#F5F2EE;border-radius:8px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:10px;">Pay With</div><div style="font-size:14px;line-height:1.8;">${items.join('')}</div></div>`;
   }
 
   async function convertToInvoice() {
@@ -5101,12 +5384,46 @@
     if (q.items && q.items.length > 0) {
       q.items.forEach(item => {
         addLine(item.desc, item.unit);
-        const rows = document.querySelectorAll('.line-item-row');
+        const rows = document.querySelectorAll('#lineItemsBody .line-item-row');
         const row = rows[rows.length - 1];
         if (item.source) row.dataset.sourceName = item.source;
         const inputs = row.querySelectorAll('input[type="number"]');
         inputs[0].value = item.qty;
-        inputs[1].value = item.rate;
+        row.querySelector('[data-role="rate"]').value = item.rate;
+        // Restore type
+        if (item.lineType) {
+          row.dataset.lineType = item.lineType;
+          const badge = row.querySelector('.line-type-badge');
+          if (badge) {
+            badge.textContent = item.lineType === 'labor' ? 'Labor' : 'Material';
+            badge.className = 'line-type-badge ' + (item.lineType === 'labor' ? 'type-labor' : 'type-material');
+          }
+        }
+        // Restore markup
+        if (item.markupEnabled) {
+          row.dataset.markupEnabled = 'true';
+          row.dataset.markupMode = item.markupMode || 'percent';
+          row.dataset.markupValue = item.markupValue || '0';
+          const markupRow = row.querySelector('.line-markup-row');
+          const markupBtn = row.querySelector('.line-markup-btn');
+          if (markupRow) markupRow.classList.add('show');
+          if (markupBtn) markupBtn.classList.add('active');
+          const markupInput = row.querySelector('.markup-input');
+          if (markupInput) markupInput.value = item.markupValue || '';
+          if (item.markupMode === 'flat') {
+            const btns = row.querySelectorAll('.markup-mode-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            btns[1]?.classList.add('active');
+          }
+        }
+        if (item.note) {
+          const noteRow = row.querySelector('.line-note-row');
+          const noteInput = row.querySelector('.line-note-input');
+          const noteBtn = row.querySelector('.line-note-btn');
+          if (noteRow) noteRow.style.display = '';
+          if (noteInput) noteInput.value = item.note;
+          if (noteBtn) noteBtn.classList.add('active');
+        }
       });
     }
 
@@ -5857,6 +6174,40 @@
     }).join('');
 
     const tierOrder = { free: 0, pro: 1, business: 2 };
+
+    // Features per tier for the expandable cards
+    const tierFeatures = {
+      free: [
+        { text: '3 quotes per month', has: true },
+        { text: 'Basic templates', has: true },
+        { text: 'PDF generation', has: true },
+        { text: 'Watermark on prints', has: false },
+        { text: 'Invoicing', has: false },
+        { text: 'Customer database', has: false },
+        { text: 'Cloud sync', has: false },
+        { text: 'Email quotes', has: false },
+      ],
+      pro: [
+        { text: 'Unlimited quotes & invoices', has: true },
+        { text: 'Cloud sync across devices', has: true },
+        { text: 'Customer database', has: true },
+        { text: 'Custom logo — no watermark', has: true },
+        { text: 'Email quotes & invoices', has: true },
+        { text: 'Payment tracking', has: true },
+        { text: 'Expense tracking', has: false },
+        { text: 'Profit & Loss reports', has: false },
+        { text: 'Job profitability', has: false },
+      ],
+      business: [
+        { text: 'Everything in Pro', has: true },
+        { text: 'Expense tracking', has: true },
+        { text: 'Profit & Loss dashboard', has: true },
+        { text: 'Job profitability reports', has: true },
+        { text: 'PDF financial exports', has: true },
+        { text: 'Accept Stripe payments', has: true },
+      ],
+    };
+
     const optionsHtml = Object.keys(plans).map(key => {
       const p = plans[key];
       const isCurrent = key === tier;
@@ -5867,16 +6218,24 @@
       if (isCurrent) {
         btnHtml = '<span class="plan-option-btn btn-current">Current Plan</span>';
       } else if (isUpgrade) {
-        btnHtml = `<button class="plan-option-btn btn-upgrade" onclick="handlePlanChange('${key}')">Upgrade →</button>`;
+        btnHtml = `<button class="plan-option-btn btn-upgrade" onclick="event.stopPropagation();handlePlanChange('${key}')">Upgrade →</button>`;
       } else {
-        btnHtml = `<button class="plan-option-btn btn-downgrade" onclick="handlePlanChange('${key}')">Downgrade</button>`;
+        btnHtml = `<button class="plan-option-btn btn-downgrade" onclick="event.stopPropagation();handlePlanChange('${key}')">Downgrade</button>`;
       }
 
-      return `<div class="plan-option ${isCurrent ? 'current' : ''}" ${!isCurrent ? `onclick="handlePlanChange('${key}')"` : ''}>
+      const featsHtml = tierFeatures[key].map(f =>
+        `<div class="plan-option-feat ${f.has ? 'has' : 'missing'}"><span class="pof-icon">${f.has ? '✓' : '✗'}</span>${f.text}</div>`
+      ).join('');
+
+      return `<div class="plan-option ${isCurrent ? 'current' : ''}" onclick="togglePlanDetails(this)">
         <div style="font-size:1.2rem;margin-bottom:6px;">${p.icon}</div>
         <div class="plan-option-name">${p.name}</div>
         <div class="plan-option-price">${p.price}<span style="font-size:11px;"> ${p.priceSub}</span></div>
         ${btnHtml}
+        <div class="plan-option-toggle">tap to see features ▾</div>
+        <div class="plan-option-details">
+          <div class="plan-option-details-inner">${featsHtml}</div>
+        </div>
       </div>`;
     }).join('');
 
@@ -5910,13 +6269,29 @@
     </div>`;
   }
 
+  function togglePlanDetails(el) {
+    const wasExpanded = el.classList.contains('expanded');
+    // Collapse all
+    document.querySelectorAll('.plan-option.expanded').forEach(o => {
+      o.classList.remove('expanded');
+      const tog = o.querySelector('.plan-option-toggle');
+      if (tog) tog.textContent = 'tap to see features ▾';
+    });
+    // Expand clicked one (if it wasn't already open)
+    if (!wasExpanded) {
+      el.classList.add('expanded');
+      const tog = el.querySelector('.plan-option-toggle');
+      if (tog) tog.textContent = 'hide features ▴';
+    }
+  }
+
   // ── Stripe Payment Links (replace with your actual links from Stripe Dashboard) ──
   const STRIPE_PAYMENT_LINKS = {
     pro:      'https://buy.stripe.com/test_14A6oG4XtbEveiP1p95Ne03',
     business: 'https://buy.stripe.com/test_6oU4gy1LhgYP6QnaZJ5Ne00',
   };
 
-  function handlePlanChange(newTier) {
+  async function handlePlanChange(newTier) {
     const tier = getUserTier();
     const tierOrder = { free: 0, pro: 1, business: 2 };
     const names = { free: 'Free', pro: 'Pro', business: 'Business' };
@@ -5932,15 +6307,29 @@
     }
 
     if (isUpgrade) {
-      // New subscription via Payment Link
-      const link = STRIPE_PAYMENT_LINKS[newTier];
-      if (!link || link.includes('REPLACE_WITH')) {
-        showToast('Payment link not configured yet — set STRIPE_PAYMENT_LINKS');
-        return;
+      // Create Stripe Checkout Session via API
+      const priceIds = {
+        pro: 'price_1TKNZ4BimZ1XIzKT4QgWeblP',
+        business: 'price_1TKNZTBimZ1XIzKTu62QITm9',
+      };
+      try {
+        showToast('Opening checkout…');
+        const resp = await fetch('/api/stripe-subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            price_id: priceIds[newTier],
+            user_id: currentUser.id,
+            return_url: window.location.origin + '/app.html'
+          })
+        });
+        const data = await resp.json();
+        if (data.error) { showToast('Error: ' + data.error); return; }
+        window.location.href = data.url;
+      } catch(e) {
+        console.error('Checkout error:', e);
+        showToast('Could not open checkout');
       }
-      // Append user ID so webhook knows who to upgrade
-      const url = link + '?client_reference_id=' + encodeURIComponent(currentUser.id);
-      window.location.href = url;
     } else if (isDowngrade) {
       // Downgrade between paid tiers = manage via Customer Portal
       if (confirm(`Downgrade to ${names[newTier]}? You can change your plan in the Stripe portal.`)) {
@@ -6334,26 +6723,83 @@
     const body = document.getElementById('invLineItemsBody');
     const row = document.createElement('div');
     row.className = 'line-item-row';
+    row.dataset.lineType = guessLineType(unit || 'each', desc || '');
+    row.dataset.markupEnabled = 'false';
+    row.dataset.markupMode = 'percent';
+    row.dataset.markupValue = '0';
     const unitVal = unit || 'each';
     const unitOptions = ['each','hr','sqft','lnft','sq','job'];
+    const typeCls = row.dataset.lineType === 'labor' ? 'type-labor' : 'type-material';
+    const typeLabel = row.dataset.lineType === 'labor' ? 'Labor' : 'Material';
     row.innerHTML = `
-      <div class="line-desc-wrap">
-        <input type="text" placeholder="Description" value="${desc ? escapeHtml(desc) : ''}">
+      <div class="line-desc-wrap" style="display:flex;align-items:center;gap:6px;">
+        <span class="line-type-badge ${typeCls}" onclick="toggleLineType(this);calcInvTotals()" title="Click to switch Material/Labor">${typeLabel}</span>
+        <input type="text" placeholder="Description" value="${desc ? escapeHtml(desc) : ''}" style="flex:1;">
       </div>
       <select class="unit-select" onchange="updateInvUnit(this)">${unitOptions.map(u => `<option value="${u}"${u===unitVal?' selected':''}>${u}</option>`).join('')}</select>
       <div class="qty-wrap">
         <input type="number" placeholder="1" value="" min="0" step="0.01" oninput="syncInvToAccordion(this)">
         <span class="qty-suffix">${unitVal}</span>
       </div>
-      <input type="number" placeholder="0.00" value="" min="0" step="0.01" oninput="syncInvToAccordion(this)">
+      <input type="number" placeholder="0.00" value="" min="0" step="0.01" oninput="syncInvToAccordion(this)" data-role="rate">
       <div class="line-total">$0.00</div>
-      <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
+      <div style="display:flex;gap:2px;">
+        <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
+        <button class="line-markup-btn" onclick="toggleInvLineMarkup(this)" title="Add markup">%</button>
+      </div>
       <button class="line-remove" onclick="removeInvLine(this)" title="Remove">×</button>
       <div class="line-note-row" style="display:none;">
         <input class="line-note-input" type="text" placeholder="e.g. Includes removal of old materials…">
       </div>
+      <div class="line-markup-row">
+        <div class="markup-inner">
+          <span class="markup-label">Your Cost</span>
+          <span class="markup-cost" style="font-family:var(--font-mono);font-size:12px;color:var(--ink);">$0.00</span>
+          <span class="markup-label" style="margin-left:8px;">Markup</span>
+          <div class="markup-mode-toggle">
+            <button class="markup-mode-btn active" onclick="setInvMarkupMode(this,'percent')">%</button>
+            <button class="markup-mode-btn" onclick="setInvMarkupMode(this,'flat')">$</button>
+          </div>
+          <input class="markup-input" type="number" placeholder="0" min="0" step="0.5" value="" oninput="calcInvMarkup(this)">
+          <span class="markup-label">→</span>
+          <span class="markup-result">Client: $0.00</span>
+        </div>
+      </div>
     `;
     body.appendChild(row);
+  }
+
+  function toggleInvLineMarkup(btn) {
+    const row = btn.closest('.line-item-row');
+    const markupRow = row.querySelector('.line-markup-row');
+    const isActive = markupRow.classList.contains('show');
+    if (isActive) {
+      markupRow.classList.remove('show');
+      btn.classList.remove('active');
+      row.dataset.markupEnabled = 'false';
+      row.dataset.markupValue = '0';
+      row.querySelector('.markup-input').value = '';
+    } else {
+      markupRow.classList.add('show');
+      btn.classList.add('active');
+      row.dataset.markupEnabled = 'true';
+      row.querySelector('.markup-input').focus();
+    }
+    calcInvTotals();
+  }
+
+  function setInvMarkupMode(btn, mode) {
+    const row = btn.closest('.line-item-row');
+    row.dataset.markupMode = mode;
+    btn.parentElement.querySelectorAll('.markup-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    calcInvMarkup(row.querySelector('.markup-input'));
+  }
+
+  function calcInvMarkup(input) {
+    const row = input.closest('.line-item-row');
+    row.dataset.markupValue = input.value || '0';
+    calcInvTotals();
   }
 
   function updateInvUnit(select) {
@@ -6381,15 +6827,32 @@
     setTimeout(() => { row.remove(); calcInvTotals(); }, 200);
   }
 
-  // ── Invoice Payment Methods ──
+  let invTaxScope = 'all';
+
   function calcInvTotals() {
     let subtotal = 0;
+    let invMaterialTotal = 0;
+    let invLaborTotal = 0;
+
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const inputs = row.querySelectorAll('input[type="number"]');
       const qty = parseFloat(inputs[0]?.value) || 0;
-      const rate = parseFloat(inputs[1]?.value) || 0;
-      const amount = qty * rate;
+      const baseCost = parseFloat(row.querySelector('[data-role="rate"]')?.value) || 0;
+      const clientRate = getLineClientRate(row);
+      const amount = qty * clientRate;
+
       row.querySelector('.line-total').textContent = amount > 0 ? formatMoney(amount) : '$0.00';
+
+      // Update markup display
+      if (row.dataset.markupEnabled === 'true') {
+        const costEl = row.querySelector('.markup-cost');
+        const resultEl = row.querySelector('.markup-result');
+        if (costEl) costEl.textContent = formatMoney(baseCost);
+        if (resultEl) resultEl.textContent = 'Client: ' + formatMoney(clientRate) + '/unit';
+      }
+
+      if (row.dataset.lineType === 'labor') { invLaborTotal += amount; }
+      else { invMaterialTotal += amount; }
       subtotal += amount;
     });
 
@@ -6408,11 +6871,24 @@
     });
 
     document.getElementById('invSubtotal').textContent = formatMoney(subtotal);
+
+    // Section subtotals
+    const matSubEl = document.getElementById('invMaterialSubtotal');
+    const labSubEl = document.getElementById('invLaborSubtotal');
+    if (matSubEl) matSubEl.textContent = formatMoney(invMaterialTotal);
+    if (labSubEl) labSubEl.textContent = formatMoney(invLaborTotal);
+    const matRow = document.getElementById('invMaterialSubRow');
+    const labRow = document.getElementById('invLaborSubRow');
+    if (matRow) matRow.style.display = (invMaterialTotal > 0 || invLaborTotal > 0) ? 'flex' : 'none';
+    if (labRow) labRow.style.display = (invMaterialTotal > 0 || invLaborTotal > 0) ? 'flex' : 'none';
+
     let taxAmt = 0;
     if (invTaxEnabled) {
       const rate = parseFloat(document.getElementById('invTaxRateInput').value) || 0;
-      taxAmt = subtotal * (rate / 100);
-      document.getElementById('invTaxLabel').textContent = `Tax (${rate}%)`;
+      const taxableAmount = invTaxScope === 'materials' ? invMaterialTotal : subtotal;
+      taxAmt = taxableAmount * (rate / 100);
+      const scopeLabel = invTaxScope === 'materials' ? ' (materials)' : '';
+      document.getElementById('invTaxLabel').textContent = `Tax (${rate}%)${scopeLabel}`;
       document.getElementById('invTaxDisplay').textContent = formatMoney(taxAmt);
     }
     document.getElementById('invTotalDisplay').textContent = formatMoney(subtotal + taxAmt);
@@ -6423,6 +6899,15 @@
     document.getElementById('invTaxToggle').classList.toggle('on', invTaxEnabled);
     document.getElementById('invTaxRateWrap').style.display = invTaxEnabled ? 'flex' : 'none';
     document.getElementById('invTaxRow').style.display = invTaxEnabled ? 'flex' : 'none';
+    const scopeWrap = document.getElementById('invTaxScopeWrap');
+    if (scopeWrap) scopeWrap.style.display = invTaxEnabled ? '' : 'none';
+    calcInvTotals();
+  }
+
+  function setInvTaxScope(scope, btn) {
+    invTaxScope = scope;
+    btn.parentElement.querySelectorAll('.tax-scope-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
     calcInvTotals();
   }
 
@@ -6435,22 +6920,38 @@
     }
     try {
       currentInvId = null;
+      // Clear all inputs and textareas
       document.querySelectorAll('#page-invoice-edit input:not([readonly]), #page-invoice-edit textarea').forEach(el => el.value = '');
+      // Reset date and invoice number
       document.getElementById('invDate').value = new Date().toISOString().split('T')[0];
       document.getElementById('invNum').value = generateInvNum();
       document.getElementById('invSidebarNum').textContent = document.getElementById('invNum').value;
       document.getElementById('invFromQuote').textContent = '—';
+      // Clear ALL line items and reset counter
       document.getElementById('invLineItemsBody').innerHTML = '';
       invLineCounter = 0;
+      // Reset tax
       if (invTaxEnabled) toggleInvTax();
+      // Reset accordions
       try { resetInvAccordions(); } catch(e) {}
+      // Reset totals displays explicitly
+      document.getElementById('invSubtotal').textContent = '$0.00';
+      document.getElementById('invTotalDisplay').textContent = '$0.00';
+      document.getElementById('invTaxDisplay').textContent = '$0.00';
+      // Clear invoice photo attachments
+      document.querySelectorAll('#invAttachGrid .attach-item').forEach(el => el.remove());
+      try { updateInvAttachCount(); } catch(e) {}
+      // Add one fresh empty line
       addInvLine();
+      // Reset UI labels
       document.getElementById('invPageTitle').textContent = 'New Invoice';
       document.getElementById('invEditTitle').textContent = 'New Invoice';
       document.getElementById('invBadge').textContent = 'Unpaid';
       document.getElementById('invBadge').style.background = 'var(--amber-pale)';
       document.getElementById('invBadge').style.color = 'var(--amber-deep)';
       document.getElementById('invMarkPaidBtn').style.display = 'block';
+      document.getElementById('invMarkPaidBtn').textContent = 'Mark as Paid ✓';
+      // Recalculate (should all be zero)
       try { calcInvTotals(); } catch(e) {}
     } catch(e) { console.error('newInvoice error:', e); }
 
@@ -6516,7 +7017,33 @@
         const row = rows[rows.length - 1];
         if (item.source) row.dataset.sourceName = item.source;
         row.querySelectorAll('input[type="number"]')[0].value = item.qty;
-        row.querySelectorAll('input[type="number"]')[1].value = item.rate;
+        row.querySelector('[data-role="rate"]').value = item.rate;
+        // Restore type
+        if (item.lineType) {
+          row.dataset.lineType = item.lineType;
+          const badge = row.querySelector('.line-type-badge');
+          if (badge) {
+            badge.textContent = item.lineType === 'labor' ? 'Labor' : 'Material';
+            badge.className = 'line-type-badge ' + (item.lineType === 'labor' ? 'type-labor' : 'type-material');
+          }
+        }
+        // Restore markup
+        if (item.markupEnabled) {
+          row.dataset.markupEnabled = 'true';
+          row.dataset.markupMode = item.markupMode || 'percent';
+          row.dataset.markupValue = item.markupValue || '0';
+          const markupRow = row.querySelector('.line-markup-row');
+          const markupBtn = row.querySelector('.line-markup-btn');
+          if (markupRow) markupRow.classList.add('show');
+          if (markupBtn) markupBtn.classList.add('active');
+          const markupInput = row.querySelector('.markup-input');
+          if (markupInput) markupInput.value = item.markupValue || '';
+          if (item.markupMode === 'flat') {
+            const btns = row.querySelectorAll('.markup-mode-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            btns[1]?.classList.add('active');
+          }
+        }
         if (item.note) {
           const noteRow = row.querySelector('.line-note-row');
           const noteInput = row.querySelector('.line-note-input');
@@ -6555,9 +7082,20 @@
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const desc = row.querySelector('input[type="text"]')?.value || '';
       const unit = row.querySelector('.unit-select')?.value || 'each';
-      const inputs = row.querySelectorAll('input[type="number"]');
+      const rateInput = row.querySelector('[data-role="rate"]');
+      const qtyInputs = row.querySelectorAll('input[type="number"]');
+      const qty = qtyInputs[0]?.value || '';
+      const rate = rateInput?.value || '';
       const note = row.querySelector('.line-note-input')?.value || '';
-      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', note, source: row.dataset.sourceName || '' });
+      const lineType = row.dataset.lineType || 'material';
+      const markupEnabled = row.dataset.markupEnabled === 'true';
+      const markupMode = row.dataset.markupMode || 'percent';
+      const markupValue = row.dataset.markupValue || '0';
+      const clientRate = getLineClientRate(row);
+      items.push({
+        desc, unit, qty, rate, note, source: row.dataset.sourceName || '',
+        lineType, markupEnabled, markupMode, markupValue, clientRate
+      });
     });
 
     const checkedItems = [];
@@ -6758,21 +7296,30 @@
       dueDate = fmtDate(d.toISOString().split('T')[0]);
     }
 
-    let itemsHtml = '';
+    let materialItemsHtml = '';
+    let laborItemsHtml = '';
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
       if (!desc) return;
       const unit = row.querySelector('.unit-select')?.value || '';
       const inputs = row.querySelectorAll('input[type="number"]');
       const qty = parseFloat(inputs[0]?.value) || 0;
-      const rate = parseFloat(inputs[1]?.value) || 0;
+      const clientRate = getLineClientRate(row);
       const note = row.querySelector('.line-note-input')?.value || '';
-      const amt = qty * rate;
-      itemsHtml += `<tr><td style="padding:8px 10px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;">${escapeHtml(desc)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;">$${rate.toFixed(2)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
-      if (note) {
-        itemsHtml += `<tr><td colspan="5" style="padding:2px 10px 8px 24px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>`;
-      }
+      const amt = qty * clientRate;
+      const lineType = row.dataset.lineType || 'material';
+      const rowHtml = `<tr><td style="padding:8px 10px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;">${escapeHtml(desc)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;">$${clientRate.toFixed(2)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
+      const noteHtml = note ? `<tr><td colspan="5" style="padding:2px 10px 8px 24px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>` : '';
+      if (lineType === 'labor') { laborItemsHtml += rowHtml + noteHtml; }
+      else { materialItemsHtml += rowHtml + noteHtml; }
     });
+    let itemsHtml = '';
+    if (materialItemsHtml && laborItemsHtml) {
+      itemsHtml = `<tr><td colspan="5" style="padding:8px 10px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Materials</td></tr>` + materialItemsHtml;
+      itemsHtml += `<tr><td colspan="5" style="padding:8px 10px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Labor</td></tr>` + laborItemsHtml;
+    } else {
+      itemsHtml = materialItemsHtml + laborItemsHtml;
+    }
 
     // Gather invoice photos
     let photosHtml = '';
@@ -6878,8 +7425,9 @@
       return new Date(str + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     };
 
-    // Line items
-    let lineItemsHtml = '';
+    // Line items grouped by type
+    let invPdfMaterials = '';
+    let invPdfLabor = '';
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const descInput = row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]');
       const desc = descInput?.value || '';
@@ -6887,20 +7435,28 @@
       const unit = row.querySelector('.unit-select')?.value || 'each';
       const numInputs = row.querySelectorAll('input[type="number"]');
       const qty = parseFloat(numInputs[0]?.value) || 0;
-      const rate = parseFloat(numInputs[1]?.value) || 0;
-      const amount = qty * rate;
+      const clientRate = getLineClientRate(row);
+      const amount = qty * clientRate;
       const note = row.querySelector('.line-note-input')?.value || '';
-      lineItemsHtml += `<tr>
+      const lineType = row.dataset.lineType || 'material';
+      const rowHtml = `<tr>
         <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#1C1C1E;">${escapeHtml(desc)}</td>
         <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;color:#6B7280;text-align:center;">${escapeHtml(unit)}</td>
         <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:center;">${qty}</td>
-        <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${rate.toFixed(2)}</td>
+        <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;">$${clientRate.toFixed(2)}</td>
         <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
       </tr>`;
-      if (note) {
-        lineItemsHtml += `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>`;
-      }
+      const noteHtml = note ? `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>` : '';
+      if (lineType === 'labor') { invPdfLabor += rowHtml + noteHtml; }
+      else { invPdfMaterials += rowHtml + noteHtml; }
     });
+    let lineItemsHtml = '';
+    if (invPdfMaterials && invPdfLabor) {
+      lineItemsHtml = `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Materials</td></tr>` + invPdfMaterials;
+      lineItemsHtml += `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Labor</td></tr>` + invPdfLabor;
+    } else {
+      lineItemsHtml = invPdfMaterials + invPdfLabor;
+    }
 
     // Biz logo from settings
     let logoData = settingsLogoData || bizLogoData || null;
@@ -6987,7 +7543,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   </div>` : ''}
 
   <!-- Payment Info -->
-  ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) parts.push('💵 CashApp: <strong>'+escapeHtml(h.cashapp)+'</strong>'); if(h.venmo) parts.push('💙 Venmo: <strong>'+escapeHtml(h.venmo)+'</strong>'); if(h.paypal) parts.push('🅿️ PayPal: <strong>'+escapeHtml(h.paypal)+'</strong>'); if(h.zelle) parts.push('⚡ Zelle: <strong>'+escapeHtml(h.zelle)+'</strong>'); return parts.length ? '<div style="margin-bottom:24px;padding:16px 20px;background:#F5F2EE;border-radius:8px;"><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:8px;">Payment Info</p><div style="font-size:13px;color:#3E3E44;line-height:2.2;">'+parts.map(p=>'<div>'+p+'</div>').join('')+'</div></div>' : ''; })()}
+  ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) { const url='https://cash.app/'+encodeURIComponent(h.cashapp.replace(/^\$/,'$')); parts.push('<div>💵 CashApp: <a href="'+url+'" target="_blank" style="color:#00D632;font-weight:700;text-decoration:none;">'+escapeHtml(h.cashapp)+'</a></div>'); } if(h.venmo) { const url='https://venmo.com/'+encodeURIComponent(h.venmo.replace(/^@/,'')); parts.push('<div>💙 Venmo: <a href="'+url+'" target="_blank" style="color:#3D95CE;font-weight:700;text-decoration:none;">'+escapeHtml(h.venmo)+'</a></div>'); } if(h.paypal) { const url='https://paypal.me/'+encodeURIComponent(h.paypal.replace(/^@/,'')); parts.push('<div>🅿️ PayPal: <a href="'+url+'" target="_blank" style="color:#003087;font-weight:700;text-decoration:none;">'+escapeHtml(h.paypal)+'</a></div>'); } if(h.zelle) parts.push('<div>⚡ Zelle: <strong>'+escapeHtml(h.zelle)+'</strong></div>'); return parts.length ? '<div style="margin-bottom:24px;padding:16px 20px;background:#F5F2EE;border-radius:8px;"><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:10px;">Pay With</p><div style="font-size:14px;color:#3E3E44;line-height:2.2;">'+parts.join('')+'</div></div>' : ''; })()}
 
   <!-- Footer -->
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;align-items:center;">
@@ -7691,6 +8247,17 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       updateTierUI();
       showPage('home');
       appInitialized = true;
+
+      // Check if returning from Stripe upgrade
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('upgraded')) {
+        setTimeout(() => {
+          const tierName = getUserTier() === 'business' ? 'Business' : (getUserTier() === 'pro' ? 'Pro' : 'your new');
+          showToast('Welcome to ' + tierName + '! 🎉');
+          // Clean URL
+          window.history.replaceState({}, '', window.location.pathname);
+        }, 500);
+      }
     } catch(e) {
       console.error('initApp fatal:', e);
       document.getElementById('authPage').style.display = 'flex';
@@ -7739,9 +8306,10 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 </script>
 
 <!-- Upgrade Banner -->
-<div class="upgrade-banner" id="upgradeBanner">
+<div class="upgrade-banner" id="upgradeBanner" style="cursor:pointer;" onclick="document.getElementById('upgradeBanner').classList.remove('show');showPage('settings');setTimeout(()=>{const el=document.getElementById('settingsPlanCard');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},300);">
   <span class="ub-msg" id="upgradeBannerMsg"></span>
-  <button class="ub-close" onclick="this.parentElement.classList.remove('show')">×</button>
+  <button style="background:var(--amber);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">Upgrade →</button>
+  <button class="ub-close" onclick="event.stopPropagation();this.parentElement.classList.remove('show')">×</button>
 </div>
 
 <!-- Toast & Overlay -->
