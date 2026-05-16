@@ -1822,17 +1822,36 @@
   .client-ac-name { font-size: 13px; font-weight: 600; color: var(--ink); }
   .client-ac-detail { font-size: 11px; color: var(--gray); margin-top: 1px; }
 
-  /* Client table rows */
-  .ct-row {
-    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 60px;
-    gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border-soft);
-    align-items: center; transition: background 0.1s;
+  /* Client cards */
+  .client-card {
+    display:flex; align-items:center; gap:14px; padding:14px 18px; background:var(--white);
+    border-radius:10px; border:1px solid var(--border); border-left:4px solid var(--amber);
+    cursor:pointer; transition:all 0.15s; margin-bottom:8px;
   }
-  .ct-row:last-child { border-bottom: none; }
-  .ct-row:hover { background: rgba(245,242,238,0.5); }
-  .ct-name { font-weight: 600; color: var(--ink); font-size: 14px; }
-  .ct-name-notes { font-size: 11px; color: var(--gray); margin-top: 1px; }
-  .ct-cell { font-size: 13px; color: var(--ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .client-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.06); transform:translateY(-1px); }
+  .client-avatar {
+    width:38px; height:38px; border-radius:50%; background:var(--amber-pale); color:var(--amber-deep);
+    display:flex; align-items:center; justify-content:center; font-family:var(--font-display);
+    font-size:15px; font-weight:700; flex-shrink:0;
+  }
+  .client-card-info { flex:1; min-width:0; }
+  .client-card-name { font-weight:700; font-size:14px; color:var(--ink); }
+  .client-card-details {
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:3px;
+    font-size:12px; color:var(--gray);
+  }
+  .client-card-details span { display:flex; align-items:center; gap:4px; white-space:nowrap; }
+  .client-card-details .ccd-icon { font-size:11px; opacity:0.5; }
+  .client-card-notes { font-size:11px; color:var(--gray); margin-top:4px; font-style:italic; }
+  .client-card-actions { display:flex; gap:4px; flex-shrink:0; opacity:0; transition:opacity 0.15s; }
+  .client-card:hover .client-card-actions { opacity:1; }
+  .client-card-actions button {
+    width:32px; height:32px; border:none; background:transparent; border-radius:6px;
+    cursor:pointer; font-size:14px; color:var(--gray); transition:all 0.12s;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .client-card-actions button:hover { background:var(--canvas-alt); color:var(--ink); }
+  .client-card-actions button.danger:hover { background:var(--red-pale); color:var(--red); }
 
   /* ══════════════════════════════════
      RESPONSIVE
@@ -1923,10 +1942,9 @@
     .job-card-right { width:100%; justify-content:space-between; }
     .dash-container, .settings-container { padding: 24px 16px 80px; }
     .payment-grid { grid-template-columns: 1fr 1fr; }
-    .ct-row { grid-template-columns: 1fr 1fr 60px; }
-    .ct-row>*:nth-child(3), .ct-row>*:nth-child(4) { display: none; }
-    #page-clients .qt-header { grid-template-columns: 1fr 1fr 60px; }
-    #page-clients .qt-header span:nth-child(3), #page-clients .qt-header span:nth-child(4) { display: none; }
+    .client-card { flex-wrap:wrap; }
+    .client-card-details { gap:8px; }
+    .client-card-actions { opacity:1; }
     .client-modal { width: 95vw; }
   }
 
@@ -3053,12 +3071,7 @@
       </div>
 
       <div id="clientTableView">
-        <div class="quotes-table">
-          <div class="qt-header" style="grid-template-columns:1.5fr 1fr 1fr 1fr 60px;">
-            <span>Name</span><span>Phone</span><span>Email</span><span>Address</span><span></span>
-          </div>
-          <div id="clientTableBody"></div>
-        </div>
+        <div id="clientTableBody"></div>
       </div>
 
       <div id="clientEmptyState" style="display:none;">
@@ -3238,6 +3251,7 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let currentUser = null;
   let _profileCache = null;
+  let _stripePayUrl = ''; // Used by buildInvoiceHtml for Stripe pay button
 
   // EmailJS
   try { emailjs.init('PcnA2CmC9QK_bs_bw'); } catch(e) { console.warn('EmailJS not loaded:', e); }
@@ -7201,38 +7215,28 @@
       const dueIn = document.getElementById('invDueIn').value || '30';
       const dueLabel = dueIn === '0' ? 'Due on receipt' : 'Net ' + dueIn;
 
-      // Build shareable doc HTML
-      const invHtml = buildInvoiceHtml();
-
-      // Upload to get shareable link
-      const docUrl = await uploadDocumentHtml(invHtml, 'invoice');
-
-      // Save invoice (without navigating away)
+      // Save invoice first
       await saveInvoiceOnly();
 
-      // Create Stripe payment link if connected
+      // Create Stripe payment link if connected (do this BEFORE building HTML)
       let paymentUrl = '';
-      const profile = _profileCache;
-      
+      _stripePayUrl = ''; // global for buildInvoiceHtml to reference
+      const profile = _profileCache || await dbGetProfile(true);
+
       if (profile?.stripe_account_id && currentInvId) {
         sendBtn.textContent = 'Creating payment link…';
         const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
         if (totalNum > 0) {
           paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile.stripe_account_id) || '';
-        }
-      } else {
-        // Try refreshing profile in case it's stale
-        if (!profile?.stripe_account_id) {
-          const freshProfile = await dbGetProfile(true);
-          if (freshProfile?.stripe_account_id && currentInvId) {
-            sendBtn.textContent = 'Creating payment link…';
-            const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
-            if (totalNum > 0) {
-              paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), freshProfile.stripe_account_id) || '';
-            }
-          }
+          _stripePayUrl = paymentUrl;
         }
       }
+
+      // Build shareable doc HTML (now includes Stripe button if available)
+      const invHtml = buildInvoiceHtml();
+
+      // Upload to get shareable link
+      const docUrl = await uploadDocumentHtml(invHtml, 'invoice');
 
       // Send via EmailJS
       await emailjs.send('service_i3t7fwd', 'template_t619ekw', {
@@ -7247,15 +7251,7 @@
         biz_email: bizEmail
       });
 
-      // If we got a payment URL, update the shared document to include pay button
-      if (paymentUrl && docUrl) {
-        const docId = docUrl.split('?doc=')[1];
-        if (docId) {
-          const payBtnHtml = `<div style="margin-top:24px;text-align:center;"><a href="${paymentUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Powered by Stripe — secure payment</p></div>`;
-          const origHtml = buildInvoiceHtml();
-          await sb.from('shared_documents').update({ html_content: origHtml + payBtnHtml }).eq('id', docId);
-        }
-      }
+      _stripePayUrl = ''; // reset
 
       // NOW navigate to invoices page
       await refreshInvoices();
@@ -7364,6 +7360,7 @@
       ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${escapeHtml(notes)}</div></div>` : ''}
       ${photosHtml}
       ${buildPaymentHandlesHtml()}
+      ${typeof _stripePayUrl !== 'undefined' && _stripePayUrl ? `<div style="margin-top:16px;text-align:center;"><a href="${_stripePayUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Secure payment powered by Stripe</p></div>` : ''}
       <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${escapeHtml(bizName) || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
     </div>`;
   }
@@ -7384,9 +7381,24 @@
     return invId;
   }
 
-  function generateInvPDF() {
+  async function generateInvPDF() {
     // Auto-save the invoice
-    saveInvoiceOnly().catch(e => console.warn('Auto-save error:', e));
+    const invId = await saveInvoiceOnly();
+
+    // Create Stripe payment link if connected
+    let stripePayUrl = '';
+    const profile = _profileCache || await dbGetProfile(true);
+    if (profile?.stripe_account_id && invId) {
+      const totalStr = document.getElementById('invTotalDisplay').textContent || '$0';
+      const totalNum = parseFloat(totalStr.replace(/[$,]/g, '')) || 0;
+      const invNum = document.getElementById('invNum').value || 'Invoice';
+      const jobDesc = document.getElementById('invDesc').value || '';
+      if (totalNum > 0) {
+        try {
+          stripePayUrl = await createPaymentLink(invId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile.stripe_account_id) || '';
+        } catch(e) { console.warn('Payment link error:', e); }
+      }
+    }
 
     const clientName = document.getElementById('invClientName').value || 'Client';
     const clientPhone = document.getElementById('invClientPhone').value || '';
@@ -7545,6 +7557,8 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   <!-- Payment Info -->
   ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) { const url='https://cash.app/'+encodeURIComponent(h.cashapp.replace(/^\$/,'$')); parts.push('<div>💵 CashApp: <a href="'+url+'" target="_blank" style="color:#00D632;font-weight:700;text-decoration:none;">'+escapeHtml(h.cashapp)+'</a></div>'); } if(h.venmo) { const url='https://venmo.com/'+encodeURIComponent(h.venmo.replace(/^@/,'')); parts.push('<div>💙 Venmo: <a href="'+url+'" target="_blank" style="color:#3D95CE;font-weight:700;text-decoration:none;">'+escapeHtml(h.venmo)+'</a></div>'); } if(h.paypal) { const url='https://paypal.me/'+encodeURIComponent(h.paypal.replace(/^@/,'')); parts.push('<div>🅿️ PayPal: <a href="'+url+'" target="_blank" style="color:#003087;font-weight:700;text-decoration:none;">'+escapeHtml(h.paypal)+'</a></div>'); } if(h.zelle) parts.push('<div>⚡ Zelle: <strong>'+escapeHtml(h.zelle)+'</strong></div>'); return parts.length ? '<div style="margin-bottom:24px;padding:16px 20px;background:#F5F2EE;border-radius:8px;"><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:10px;">Pay With</p><div style="font-size:14px;color:#3E3E44;line-height:2.2;">'+parts.join('')+'</div></div>' : ''; })()}
 
+  ${stripePayUrl ? `<div style="margin-bottom:24px;text-align:center;"><a href="${stripePayUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Secure payment powered by Stripe</p></div>` : ''}
+
   <!-- Footer -->
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;align-items:center;">
     <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:#1C1C1E;">${bizName ? escapeHtml(bizName) : 'Builders<span style=color:#E07A2F;>Invoice</span>'}</div>
@@ -7591,21 +7605,29 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     document.getElementById('clientEmptyState').style.display = 'none';
     document.getElementById('clientTableView').style.display = '';
 
-    document.getElementById('clientTableBody').innerHTML = clients.map(c => `
-      <div class="ct-row">
-        <div>
-          <div class="ct-name">${escapeHtml(c.name||'')}</div>
-          ${c.notes ? `<div class="ct-name-notes">${escapeHtml(c.notes)}</div>` : ''}
+    document.getElementById('clientTableBody').innerHTML = clients.map(c => {
+      const initial = (c.name || '?')[0].toUpperCase();
+      const phone = c.phone || '';
+      const email = c.email || '';
+      const address = c.address || '';
+      return `
+      <div class="client-card" onclick="editClientById('${c.id||c.name}')">
+        <div class="client-avatar">${initial}</div>
+        <div class="client-card-info">
+          <div class="client-card-name">${escapeHtml(c.name||'Unnamed')}</div>
+          <div class="client-card-details">
+            ${phone ? `<span><span class="ccd-icon">📞</span>${escapeHtml(phone)}</span>` : ''}
+            ${email ? `<span><span class="ccd-icon">✉</span>${escapeHtml(email)}</span>` : ''}
+            ${address ? `<span><span class="ccd-icon">📍</span>${escapeHtml(address)}</span>` : ''}
+          </div>
+          ${c.notes ? `<div class="client-card-notes">"${escapeHtml(c.notes)}"</div>` : ''}
         </div>
-        <div class="ct-cell">${escapeHtml(c.phone||'—')}</div>
-        <div class="ct-cell">${escapeHtml(c.email||'—')}</div>
-        <div class="ct-cell">${escapeHtml(c.address||'—')}</div>
-        <div class="qt-actions">
-          <button class="qt-action-btn" onclick="editClientById('${c.id||c.name}')" title="Edit">✎</button>
-          <button class="qt-action-btn danger" onclick="deleteClient('${c.id||c.name}')" title="Delete">×</button>
+        <div class="client-card-actions" onclick="event.stopPropagation()">
+          <button onclick="editClientById('${c.id||c.name}')" title="Edit">✎</button>
+          <button class="danger" onclick="deleteClient('${c.id||c.name}')" title="Delete">×</button>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   function showAddClient() {
@@ -7856,6 +7878,43 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   function pnlPrevMonth() { pnlMonth--; if (pnlMonth < 0) { pnlMonth = 11; pnlYear--; } renderPnl(); }
   function pnlNextMonth() { pnlMonth++; if (pnlMonth > 11) { pnlMonth = 0; pnlYear++; } renderPnl(); }
 
+  // Calculate auto-costs from invoice line items with markup
+  function getInvoiceAutoCosts(inv) {
+    if (!inv.items || inv.items.length === 0) return 0;
+    return inv.items.reduce((total, item) => {
+      if (item.markupEnabled) {
+        const qty = parseFloat(item.qty) || 0;
+        const baseCost = parseFloat(item.rate) || 0;
+        return total + (qty * baseCost);
+      }
+      return total;
+    }, 0);
+  }
+
+  // Get detailed auto-cost breakdown per invoice
+  function getInvoiceAutoCostItems(inv) {
+    if (!inv.items || inv.items.length === 0) return [];
+    return inv.items.filter(item => item.markupEnabled).map(item => {
+      const qty = parseFloat(item.qty) || 0;
+      const baseCost = parseFloat(item.rate) || 0;
+      const clientRate = parseFloat(item.clientRate) || baseCost;
+      return {
+        desc: item.desc,
+        qty,
+        baseCost,
+        clientRate,
+        totalCost: qty * baseCost,
+        totalRevenue: qty * clientRate,
+        profit: qty * (clientRate - baseCost),
+        lineType: item.lineType || 'material',
+        invoiceNum: inv.invoiceNum,
+        invoiceId: inv.id,
+        date: inv.date,
+        clientName: inv.clientName,
+      };
+    });
+  }
+
   function pnlGetMonthData(year, month) {
     const invoices = getInvoices();
     const expenses = getExpenses();
@@ -7865,8 +7924,14 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     const rev = invoices.filter(inv => inv.status === 'Paid' && inv.date && inv.date.startsWith(prefix));
     const exp = expenses.filter(e => e.date && e.date.startsWith(prefix));
     const revTotal = rev.reduce((s, i) => s + (parseFloat(i.total?.replace(/[$,]/g, '')) || 0), 0);
-    const expTotal = exp.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-    return { rev, exp, revTotal, expTotal, profit: revTotal - expTotal };
+    const manualExpTotal = exp.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+
+    // Auto-costs from invoice markup
+    const autoCostTotal = rev.reduce((s, inv) => s + getInvoiceAutoCosts(inv), 0);
+    const autoCostItems = rev.flatMap(inv => getInvoiceAutoCostItems(inv));
+
+    const expTotal = manualExpTotal + autoCostTotal;
+    return { rev, exp, revTotal, expTotal, manualExpTotal, autoCostTotal, autoCostItems, profit: revTotal - expTotal };
   }
 
   function renderPnl() {
@@ -7908,16 +7973,26 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     const cats = {};
     d.exp.forEach(e => { if (!cats[e.category]) cats[e.category] = []; cats[e.category].push(e); });
     let expHtml = '';
-    if (d.exp.length === 0) {
+    if (d.exp.length === 0 && d.autoCostItems.length === 0) {
       expHtml = '<div style="padding:16px;text-align:center;color:var(--gray);font-size:13px;">No expenses</div>';
     } else {
-      Object.keys(cats).sort().forEach(cat => {
-        const catTotal = cats[cat].reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-        expHtml += `<div class="pnl-cat-header">${escapeHtml(cat)} · ${formatMoney(catTotal)}</div>`;
-        cats[cat].forEach(e => {
-          expHtml += `<div class="pnl-list-item" style="cursor:pointer;" onclick="editExpense('${e.id}')"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(e.description)}</span><span class="pnl-list-secondary">${formatDate(e.date)}${e.notes ? ' · ' + escapeHtml(e.notes) : ''}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(parseFloat(e.amount))}</span></div>`;
+      // Auto-costs from invoice markup
+      if (d.autoCostItems.length > 0) {
+        expHtml += `<div class="pnl-cat-header" style="color:var(--amber-deep);">📦 Invoice Costs (auto) · ${formatMoney(d.autoCostTotal)}</div>`;
+        d.autoCostItems.forEach(ac => {
+          expHtml += `<div class="pnl-list-item"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(ac.desc)}</span><span class="pnl-list-secondary">${escapeHtml(ac.clientName || '')} · ${escapeHtml(ac.invoiceNum)} · ${ac.qty} × ${formatMoney(ac.baseCost)}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(ac.totalCost)}</span></div>`;
         });
-      });
+      }
+      // Manual expenses
+      if (d.exp.length > 0) {
+        Object.keys(cats).sort().forEach(cat => {
+          const catTotal = cats[cat].reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+          expHtml += `<div class="pnl-cat-header">${escapeHtml(cat)} · ${formatMoney(catTotal)}</div>`;
+          cats[cat].forEach(e => {
+            expHtml += `<div class="pnl-list-item" style="cursor:pointer;" onclick="editExpense('${e.id}')"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(e.description)}</span><span class="pnl-list-secondary">${formatDate(e.date)}${e.notes ? ' · ' + escapeHtml(e.notes) : ''}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(parseFloat(e.amount))}</span></div>`;
+          });
+        });
+      }
     }
     document.getElementById('pnlExpList').innerHTML = expHtml;
     document.getElementById('pnlExpTotal').textContent = formatMoney(d.expTotal);
@@ -7942,7 +8017,8 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
     document.getElementById('pnlMonthlySummary').innerHTML = `
       <div class="pnl-summary-row"><span>Revenue</span><span style="color:var(--green);">${formatMoney(d.revTotal)}</span></div>
-      <div class="pnl-summary-row"><span>Job Costs</span><span>-${formatMoney(jobCost)}</span></div>
+      ${d.autoCostTotal > 0 ? `<div class="pnl-summary-row"><span>Invoice Costs (markup)</span><span>-${formatMoney(d.autoCostTotal)}</span></div>` : ''}
+      <div class="pnl-summary-row"><span>Job Expenses (manual)</span><span>-${formatMoney(jobCost)}</span></div>
       <div class="pnl-summary-row"><span>Overhead</span><span>-${formatMoney(overheadCost)}</span></div>
       <div class="pnl-summary-total"><span>Net Profit</span><span style="color:${d.profit >= 0 ? 'var(--green)' : '#ef4444'};">${formatMoney(d.profit)}</span></div>
       ${vsHtml}
@@ -7964,15 +8040,21 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       const isPaid = inv && inv.status === 'Paid';
       const revenue = isPaid ? (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0) : 0;
       const jobExps = expenses.filter(e => e.quote_id === q.id);
-      const cost = jobExps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-      jobs.push({ id: q.id, type: 'quote', title: q.jobDesc || 'Untitled', client: q.clientName || '—', revenue, cost, profit: revenue - cost, items: (inv || q).items || [], expenses: jobExps, quoteId: q.id, invoice: inv, quote: q });
+      const manualCost = jobExps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+      const autoCost = (inv && isPaid) ? getInvoiceAutoCosts(inv) : 0;
+      const autoCostItems = (inv && isPaid) ? getInvoiceAutoCostItems(inv) : [];
+      const cost = manualCost + autoCost;
+      jobs.push({ id: q.id, type: 'quote', title: q.jobDesc || 'Untitled', client: q.clientName || '—', revenue, cost, manualCost, autoCost, autoCostItems, profit: revenue - cost, items: (inv || q).items || [], expenses: jobExps, quoteId: q.id, invoice: inv, quote: q });
     });
 
     invoices.filter(i => !i.fromQuoteId).forEach(inv => {
       const revenue = inv.status === 'Paid' ? (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0) : 0;
       const jobExps = expenses.filter(e => e.invoice_id === inv.id);
-      const cost = jobExps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-      jobs.push({ id: inv.id, type: 'invoice', title: inv.jobDesc || 'Untitled', client: inv.clientName || '—', revenue, cost, profit: revenue - cost, items: inv.items || [], expenses: jobExps, invoice: inv });
+      const manualCost = jobExps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+      const autoCost = inv.status === 'Paid' ? getInvoiceAutoCosts(inv) : 0;
+      const autoCostItems = inv.status === 'Paid' ? getInvoiceAutoCostItems(inv) : [];
+      const cost = manualCost + autoCost;
+      jobs.push({ id: inv.id, type: 'invoice', title: inv.jobDesc || 'Untitled', client: inv.clientName || '—', revenue, cost, manualCost, autoCost, autoCostItems, profit: revenue - cost, items: inv.items || [], expenses: jobExps, invoice: inv });
     });
 
     jobs.sort((a, b) => b.revenue - a.revenue);
@@ -8012,7 +8094,11 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
           <div class="pnl-job-body">
             <div class="pnl-job-section-label">Billed Items</div>
             ${billedHtml}
-            <div class="pnl-job-section-label" style="margin-top:8px;">Job Expenses</div>
+            ${j.autoCostItems && j.autoCostItems.length > 0 ? `
+            <div class="pnl-job-section-label" style="margin-top:8px;color:var(--amber-deep);">📦 Invoice Costs (from markup)</div>
+            ${j.autoCostItems.map(ac => `<div class="pnl-job-row"><span>${escapeHtml(ac.desc)}<br><span style="font-size:10px;color:var(--gray);">${ac.qty} × ${formatMoney(ac.baseCost)} (your cost)</span></span><span></span><span style="font-family:var(--font-mono);color:var(--red);text-align:right;">-${formatMoney(ac.totalCost)}</span><span></span></div>`).join('')}
+            ` : ''}
+            <div class="pnl-job-section-label" style="margin-top:8px;">Manual Expenses</div>
             ${expHtml}
             <div class="pnl-job-add"><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();showExpenseModal('${j.id}','${j.type}')">+ Add Expense</button></div>
             <div style="padding:12px 18px;background:var(--canvas);display:flex;justify-content:space-between;font-size:13px;font-weight:700;">
@@ -8038,12 +8124,14 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     const expenses = getExpenses();
     const allPaid = invoices.filter(i => i.status === 'Paid');
     const totalRev = allPaid.reduce((s, i) => s + (parseFloat(i.total?.replace(/[$,]/g, '')) || 0), 0);
-    const totalExp = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+    const totalManualExp = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+    const totalAutoCost = allPaid.reduce((s, inv) => s + getInvoiceAutoCosts(inv), 0);
+    const totalExp = totalManualExp + totalAutoCost;
     const totalProfit = totalRev - totalExp;
 
     document.getElementById('pnlLifetimeStats').innerHTML = `
       <div class="pnl-stat"><div class="pnl-stat-label">Total Earned</div><div class="pnl-stat-value" style="color:var(--green);">${formatMoney(totalRev)}</div><div class="pnl-stat-sub">all-time</div></div>
-      <div class="pnl-stat"><div class="pnl-stat-label">Total Spent</div><div class="pnl-stat-value" style="color:var(--red);">${formatMoney(totalExp)}</div><div class="pnl-stat-sub">all-time</div></div>
+      <div class="pnl-stat"><div class="pnl-stat-label">Total Spent</div><div class="pnl-stat-value" style="color:var(--red);">${formatMoney(totalExp)}</div><div class="pnl-stat-sub">${totalAutoCost > 0 ? formatMoney(totalAutoCost) + ' invoice costs + ' + formatMoney(totalManualExp) + ' manual' : 'all-time'}</div></div>
       <div class="pnl-stat"><div class="pnl-stat-label">Lifetime Profit</div><div class="pnl-stat-value" style="color:${totalProfit >= 0 ? 'var(--green)' : 'var(--red)'};">${formatMoney(totalProfit)}</div><div class="pnl-stat-sub">net</div></div>
       <div class="pnl-stat"><div class="pnl-stat-label">Avg Monthly Profit</div><div class="pnl-stat-value" style="color:var(--ink);">${formatMoney(totalProfit / Math.max(1, getMonthsActive()))}</div><div class="pnl-stat-sub">across ${getMonthsActive()} month${getMonthsActive() !== 1 ? 's' : ''}</div></div>
     `;
