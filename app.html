@@ -7471,14 +7471,15 @@
 
       // Create Stripe payment link if connected (do this BEFORE building HTML)
       let paymentUrl = '';
-      _stripePayUrl = ''; // global for buildInvoiceHtml to reference
+      _stripePayUrl = '';
       const profile = _profileCache || await dbGetProfile(true);
 
-      if (profile?.stripe_account_id && currentInvId) {
+      // Create Stripe payment link (works with or without Stripe Connect)
+      if (currentInvId) {
         sendBtn.textContent = 'Creating payment link…';
         const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
         if (totalNum > 0) {
-          paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile.stripe_account_id) || '';
+          paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile?.stripe_account_id || null) || '';
           _stripePayUrl = paymentUrl;
         }
       }
@@ -7642,17 +7643,17 @@
     // Auto-save the invoice
     const invId = await saveInvoiceOnly();
 
-    // Create Stripe payment link if connected
+    // Create Stripe payment link
     let stripePayUrl = '';
     const profile = _profileCache || await dbGetProfile(true);
-    if (profile?.stripe_account_id && invId) {
+    if (invId) {
       const totalStr = document.getElementById('invTotalDisplay').textContent || '$0';
       const totalNum = parseFloat(totalStr.replace(/[$,]/g, '')) || 0;
       const invNum = document.getElementById('invNum').value || 'Invoice';
       const jobDesc = document.getElementById('invDesc').value || '';
       if (totalNum > 0) {
         try {
-          stripePayUrl = await createPaymentLink(invId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile.stripe_account_id) || '';
+          stripePayUrl = await createPaymentLink(invId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile?.stripe_account_id || null) || '';
         } catch(e) { console.warn('Payment link error:', e); }
       }
     }
@@ -8189,7 +8190,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     const mStr = String(month + 1).padStart(2, '0');
     const prefix = `${year}-${mStr}`;
 
-    const rev = invoices.filter(inv => inv.status === 'Paid' && inv.date && inv.date.startsWith(prefix));
+    const rev = invoices.filter(inv => inv.date && inv.date.startsWith(prefix));
     const exp = expenses.filter(e => e.date && e.date.startsWith(prefix));
     const revTotal = rev.reduce((s, i) => s + (parseFloat(i.total?.replace(/[$,]/g, '')) || 0), 0);
     const manualExpTotal = exp.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
@@ -8320,22 +8321,21 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
     quotes.forEach(q => {
       const inv = invByQuote[q.id];
-      const isPaid = inv && inv.status === 'Paid';
-      const revenue = isPaid ? (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0) : 0;
+      const revenue = inv ? (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0) : 0;
       const jobExps = expenses.filter(e => e.quote_id === q.id);
       const manualCost = jobExps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-      const autoCost = (inv && isPaid) ? getInvoiceAutoCosts(inv) : 0;
-      const autoCostItems = (inv && isPaid) ? getInvoiceAutoCostItems(inv) : [];
+      const autoCost = inv ? getInvoiceAutoCosts(inv) : 0;
+      const autoCostItems = inv ? getInvoiceAutoCostItems(inv) : [];
       const cost = manualCost + autoCost;
       jobs.push({ id: q.id, type: 'quote', title: q.jobDesc || 'Untitled', client: q.clientName || '—', revenue, cost, manualCost, autoCost, autoCostItems, profit: revenue - cost, items: (inv || q).items || [], expenses: jobExps, quoteId: q.id, invoice: inv, quote: q });
     });
 
     invoices.filter(i => !i.fromQuoteId).forEach(inv => {
-      const revenue = inv.status === 'Paid' ? (parseFloat(inv.total?.replace(/[$,]/g, '')) || 0) : 0;
+      const revenue = parseFloat(inv.total?.replace(/[$,]/g, '')) || 0;
       const jobExps = expenses.filter(e => e.invoice_id === inv.id);
       const manualCost = jobExps.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-      const autoCost = inv.status === 'Paid' ? getInvoiceAutoCosts(inv) : 0;
-      const autoCostItems = inv.status === 'Paid' ? getInvoiceAutoCostItems(inv) : [];
+      const autoCost = getInvoiceAutoCosts(inv);
+      const autoCostItems = getInvoiceAutoCostItems(inv);
       const cost = manualCost + autoCost;
       jobs.push({ id: inv.id, type: 'invoice', title: inv.jobDesc || 'Untitled', client: inv.clientName || '—', revenue, cost, manualCost, autoCost, autoCostItems, profit: revenue - cost, items: inv.items || [], expenses: jobExps, invoice: inv });
     });
@@ -8416,10 +8416,10 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   function renderPnlLifetime() {
     const invoices = getInvoices();
     const expenses = getExpenses();
-    const allPaid = invoices.filter(i => i.status === 'Paid');
-    const totalRev = allPaid.reduce((s, i) => s + (parseFloat(i.total?.replace(/[$,]/g, '')) || 0), 0);
+    const allInv = invoices;
+    const totalRev = allInv.reduce((s, i) => s + (parseFloat(i.total?.replace(/[$,]/g, '')) || 0), 0);
     const totalManualExp = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-    const totalAutoCost = allPaid.reduce((s, inv) => s + getInvoiceAutoCosts(inv), 0);
+    const totalAutoCost = allInv.reduce((s, inv) => s + getInvoiceAutoCosts(inv), 0);
     const totalExp = totalManualExp + totalAutoCost;
     const totalProfit = totalRev - totalExp;
 
