@@ -620,6 +620,8 @@
   .line-type-badge.type-material:hover { background:rgba(45,125,82,0.2); }
   .line-type-badge.type-labor { background:rgba(59,130,246,0.1); color:#3B82F6; border-color:rgba(59,130,246,0.2); }
   .line-type-badge.type-labor:hover { background:rgba(59,130,246,0.2); }
+  .line-type-badge.type-sub { background:rgba(224,122,47,0.1); color:var(--amber-deep); border-color:rgba(224,122,47,0.2); }
+  .line-type-badge.type-sub:hover { background:rgba(224,122,47,0.2); }
 
   .line-markup-btn {
     background:none; border:none; cursor:pointer; font-size:12px; padding:4px 6px;
@@ -2535,17 +2537,45 @@
           <div class="totals-mobile-wrap">
 
             <div class="totals-section-row" id="materialSubRow" style="display:none;">
-              <span class="totals-section-label">Materials</span>
+              <span class="totals-section-label">🟢 Materials</span>
               <span class="totals-section-value" id="materialSubtotal">$0.00</span>
             </div>
             <div class="totals-section-row" id="laborSubRow" style="display:none;">
-              <span class="totals-section-label">Labor</span>
+              <span class="totals-section-label">🔵 My Labor</span>
               <span class="totals-section-value" id="laborSubtotal">$0.00</span>
+            </div>
+            <div class="totals-section-row" id="subSubRow" style="display:none;">
+              <span class="totals-section-label">🟠 Sub/Employee</span>
+              <span class="totals-section-value" id="subSubtotal">$0.00</span>
             </div>
 
             <div class="totals-row">
               <span class="totals-row-label">Subtotal</span>
               <span class="totals-row-value" id="subtotalDisplay">$0.00</span>
+            </div>
+
+            <div class="totals-tax-row">
+              <div class="totals-tax-left">
+                <span>O&P</span>
+                <button class="toggle-switch" id="opToggle" onclick="toggleOP()"></button>
+              </div>
+              <div id="opRateWrap" style="display:none;align-items:center;gap:5px;">
+                <input type="number" class="tax-rate-input" id="opRateInput" value="15" min="0" max="50" step="0.5" oninput="calcAll()">
+                <span style="font-size:12px;color:rgba(255,255,255,0.4);">%</span>
+              </div>
+            </div>
+            <div id="opRow" style="display:none;">
+              <div class="totals-row">
+                <span class="totals-row-label" id="opLabel">Overhead & Profit (15%)</span>
+                <span class="totals-row-value" id="opDisplay">$0.00</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:2px 0 6px;">
+                <span style="font-size:10px;color:rgba(255,255,255,0.3);">On invoice:</span>
+                <div class="tax-scope-toggle">
+                  <button class="tax-scope-btn active" onclick="setOPVisible(false,this)">Hidden</button>
+                  <button class="tax-scope-btn" onclick="setOPVisible(true,this)">Shown</button>
+                </div>
+              </div>
             </div>
 
             <div class="totals-tax-row">
@@ -2997,16 +3027,42 @@
           <div class="totals-panel-body">
             <div class="totals-mobile-wrap">
               <div class="totals-section-row" id="invMaterialSubRow" style="display:none;">
-                <span class="totals-section-label">Materials</span>
+                <span class="totals-section-label">🟢 Materials</span>
                 <span class="totals-section-value" id="invMaterialSubtotal">$0.00</span>
               </div>
               <div class="totals-section-row" id="invLaborSubRow" style="display:none;">
-                <span class="totals-section-label">Labor</span>
+                <span class="totals-section-label">🔵 My Labor</span>
                 <span class="totals-section-value" id="invLaborSubtotal">$0.00</span>
+              </div>
+              <div class="totals-section-row" id="invSubSubRow" style="display:none;">
+                <span class="totals-section-label">🟠 Sub/Employee</span>
+                <span class="totals-section-value" id="invSubSubtotal">$0.00</span>
               </div>
               <div class="totals-row">
                 <span class="totals-row-label">Subtotal</span>
                 <span class="totals-row-value" id="invSubtotal">$0.00</span>
+              </div>
+              <div class="totals-tax-row">
+                <div class="totals-tax-left"><span>O&P</span>
+                  <button class="toggle-switch" id="invOpToggle" onclick="toggleInvOP()"></button>
+                </div>
+                <div id="invOpRateWrap" style="display:none;align-items:center;gap:5px;">
+                  <input type="number" class="tax-rate-input" id="invOpRateInput" value="15" min="0" max="50" step="0.5" oninput="calcInvTotals()">
+                  <span style="font-size:12px;color:rgba(255,255,255,0.4);">%</span>
+                </div>
+              </div>
+              <div id="invOpRow" style="display:none;">
+                <div class="totals-row">
+                  <span class="totals-row-label" id="invOpLabel">Overhead & Profit (15%)</span>
+                  <span class="totals-row-value" id="invOpDisplay">$0.00</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;padding:2px 0 6px;">
+                  <span style="font-size:10px;color:rgba(255,255,255,0.3);">On invoice:</span>
+                  <div class="tax-scope-toggle">
+                    <button class="tax-scope-btn active" onclick="setInvOPVisible(false,this)">Hidden</button>
+                    <button class="tax-scope-btn" onclick="setInvOPVisible(true,this)">Shown</button>
+                  </div>
+                </div>
               </div>
               <div class="totals-tax-row">
                 <div class="totals-tax-left"><span>Tax</span>
@@ -3777,6 +3833,8 @@
       tax_rate: parseFloat(quote.taxRate) || 0,
       subtotal: parseFloat(quote.subtotal?.replace(/[$,]/g,'')) || 0,
       total: parseFloat(quote.total?.replace(/[$,]/g,'')) || 0,
+      overhead_percent: parseFloat(quote.overheadPercent) || 0,
+      overhead_visible: quote.overheadVisible || false,
     };
 
     let quoteId;
@@ -3803,9 +3861,14 @@
         unit: item.unit,
         qty: parseFloat(item.qty) || 0,
         rate: parseFloat(item.rate) || 0,
-        amount: (parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0),
+        amount: (parseFloat(item.qty) || 0) * (parseFloat(item.clientRate) || parseFloat(item.rate) || 0),
         source_name: item.source || null,
         note: item.note || '',
+        line_type: item.lineType || 'material',
+        markup_enabled: item.markupEnabled || false,
+        markup_mode: item.markupMode || 'percent',
+        markup_value: parseFloat(item.markupValue) || 0,
+        client_rate: parseFloat(item.clientRate) || parseFloat(item.rate) || 0,
       }));
       await sb.from('quote_items').insert(itemRows);
     }
@@ -3851,6 +3914,8 @@
       total: parseFloat(invoice.total?.replace(/[$,]/g,'')) || 0,
       from_quote_id: invoice.fromQuoteId || null,
       from_quote_num: invoice.fromQuoteNum || null,
+      overhead_percent: parseFloat(invoice.overheadPercent) || 0,
+      overhead_visible: invoice.overheadVisible || false,
     };
 
     let invId;
@@ -3874,9 +3939,14 @@
         unit: item.unit,
         qty: parseFloat(item.qty) || 0,
         rate: parseFloat(item.rate) || 0,
-        amount: (parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0),
+        amount: (parseFloat(item.qty) || 0) * (parseFloat(item.clientRate) || parseFloat(item.rate) || 0),
         source_name: item.source || null,
         note: item.note || '',
+        line_type: item.lineType || 'material',
+        markup_enabled: item.markupEnabled || false,
+        markup_mode: item.markupMode || 'percent',
+        markup_value: parseFloat(item.markupValue) || 0,
+        client_rate: parseFloat(item.clientRate) || parseFloat(item.rate) || 0,
       }));
       await sb.from('invoice_items').insert(itemRows);
     }
@@ -3931,7 +4001,16 @@
       bizAddress: q.biz_address, bizLicense: q.biz_license, notes: q.notes,
       taxEnabled: q.tax_enabled, taxRate: q.tax_rate, subtotal: '$' + (q.subtotal||0).toFixed(2),
       total: '$' + (q.total||0).toFixed(2), updatedAt: new Date(q.updated_at).getTime(),
-      items: (q.items||[]).map(i => ({ desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, note: i.note || '', source: i.source_name || '' }))
+      overheadPercent: q.overhead_percent || 0, overheadVisible: q.overhead_visible || false,
+      items: (q.items||[]).map(i => ({
+        desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, note: i.note || '',
+        source: i.source_name || '',
+        lineType: i.line_type || 'material',
+        markupEnabled: i.markup_enabled || false,
+        markupMode: i.markup_mode || 'percent',
+        markupValue: i.markup_value || 0,
+        clientRate: i.client_rate || i.rate || 0,
+      }))
     }));
     return _quotesCache;
   }
@@ -3947,7 +4026,16 @@
       taxEnabled: inv.tax_enabled, taxRate: inv.tax_rate, subtotal: '$' + (inv.subtotal||0).toFixed(2),
       total: '$' + (inv.total||0).toFixed(2), fromQuoteId: inv.from_quote_id,
       fromQuoteNum: inv.from_quote_num, updatedAt: new Date(inv.updated_at).getTime(),
-      items: (inv.items||[]).map(i => ({ desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, note: i.note || '', source: i.source_name || '' }))
+      overheadPercent: inv.overhead_percent || 0, overheadVisible: inv.overhead_visible || false,
+      items: (inv.items||[]).map(i => ({
+        desc: i.description, unit: i.unit, qty: i.qty, rate: i.rate, note: i.note || '',
+        source: i.source_name || '',
+        lineType: i.line_type || 'material',
+        markupEnabled: i.markup_enabled || false,
+        markupMode: i.markup_mode || 'percent',
+        markupValue: i.markup_value || 0,
+        clientRate: i.client_rate || i.rate || 0,
+      }))
     }));
     return _invoicesCache;
   }
@@ -4054,10 +4142,18 @@
 
   function guessLineType(unit, desc) {
     const laborUnits = ['hr','job'];
+    const subWords = ['sub','subcontractor','employee','crew','helper'];
     const laborWords = ['labor','install','demo','cleanup','travel','management','repair','service'];
-    if (laborUnits.includes(unit)) return 'labor';
-    if (desc && laborWords.some(w => desc.toLowerCase().includes(w))) return 'labor';
+    if (desc && subWords.some(w => desc.toLowerCase().includes(w))) return 'sub';
+    if (laborUnits.includes(unit)) return 'mylabor';
+    if (desc && laborWords.some(w => desc.toLowerCase().includes(w))) return 'mylabor';
     return 'material';
+  }
+
+  function getTypeBadgeInfo(type) {
+    if (type === 'mylabor') return { cls: 'type-labor', label: 'My Labor' };
+    if (type === 'sub') return { cls: 'type-sub', label: 'Sub' };
+    return { cls: 'type-material', label: 'Material' };
   }
 
   function addLine(description, unit) {
@@ -4078,12 +4174,12 @@
       `<option value="${u}"${u === unitVal ? ' selected' : ''}>${u}</option>`
     ).join('');
 
-    const typeCls = row.dataset.lineType === 'labor' ? 'type-labor' : 'type-material';
-    const typeLabel = row.dataset.lineType === 'labor' ? 'Labor' : 'Material';
+    const typeInfo = getTypeBadgeInfo(row.dataset.lineType);
+    const hideMarkup = row.dataset.lineType === 'mylabor' ? ' style="display:none;"' : '';
 
     row.innerHTML = `
       <div class="line-desc-wrap" style="display:flex;align-items:center;gap:6px;">
-        <span class="line-type-badge ${typeCls}" onclick="toggleLineType(this)" title="Click to switch Material/Labor">${typeLabel}</span>
+        <span class="line-type-badge ${typeInfo.cls}" onclick="toggleLineType(this)" title="Click to switch type">${typeInfo.label}</span>
         <input type="text" placeholder="Type or pick from suggestions…" value="${description ? escapeHtml(description) : ''}" style="flex:1;">
       </div>
       <select class="unit-select" onchange="updateUnit(this)">
@@ -4097,7 +4193,7 @@
       <div class="line-total">$0.00</div>
       <div style="display:flex;gap:2px;">
         <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
-        <button class="line-markup-btn" onclick="toggleLineMarkup(this)" title="Add markup">%</button>
+        <button class="line-markup-btn" onclick="toggleLineMarkup(this)" title="Add markup"${hideMarkup}>%</button>
       </div>
       <button class="line-remove" onclick="removeLine(this)" title="Remove">×</button>
       <div class="line-note-row" style="display:none;">
@@ -4126,14 +4222,23 @@
 
   function toggleLineType(badge) {
     const row = badge.closest('.line-item-row');
-    if (row.dataset.lineType === 'material') {
-      row.dataset.lineType = 'labor';
-      badge.textContent = 'Labor';
-      badge.className = 'line-type-badge type-labor';
+    const cycle = { material: 'mylabor', mylabor: 'sub', sub: 'material' };
+    const newType = cycle[row.dataset.lineType] || 'material';
+    row.dataset.lineType = newType;
+    const info = getTypeBadgeInfo(newType);
+    badge.textContent = info.label;
+    badge.className = 'line-type-badge ' + info.cls;
+
+    // Hide markup for My Labor (no cost to mark up)
+    const markupBtn = row.querySelector('.line-markup-btn');
+    const markupRow = row.querySelector('.line-markup-row');
+    if (newType === 'mylabor') {
+      if (markupBtn) markupBtn.style.display = 'none';
+      if (markupRow) { markupRow.classList.remove('show'); }
+      row.dataset.markupEnabled = 'false';
+      row.dataset.markupValue = '0';
     } else {
-      row.dataset.lineType = 'material';
-      badge.textContent = 'Material';
-      badge.className = 'line-type-badge type-material';
+      if (markupBtn) markupBtn.style.display = '';
     }
     calcAll();
   }
@@ -4285,11 +4390,14 @@
   //  CALCULATE
   // ══════════════════════════════════
   let taxScope = 'all'; // 'all' or 'materials'
+  let overheadPercent = 0;
+  let overheadVisible = false;
 
   function calcAll() {
     let grandTotal = 0;
     let materialTotal = 0;
-    let laborTotal = 0;
+    let myLaborTotal = 0;
+    let subTotal = 0;
     let totalItems = 0;
 
     // Line items table
@@ -4311,11 +4419,10 @@
       }
 
       // Track by type
-      if (row.dataset.lineType === 'labor') {
-        laborTotal += amount;
-      } else {
-        materialTotal += amount;
-      }
+      const lt = row.dataset.lineType;
+      if (lt === 'mylabor') { myLaborTotal += amount; }
+      else if (lt === 'sub') { subTotal += amount; }
+      else { materialTotal += amount; }
       grandTotal += amount;
       if (amount > 0) totalItems++;
     });
@@ -4344,28 +4451,65 @@
     document.getElementById('subtotalDisplay').textContent = formatMoney(grandTotal);
     document.getElementById('sidebarLineCount').textContent = totalItems;
 
-    // Section subtotals
+    // Section subtotals — show only types that have values
+    const hasMultipleTypes = (materialTotal > 0 ? 1 : 0) + (myLaborTotal > 0 ? 1 : 0) + (subTotal > 0 ? 1 : 0) > 1;
     const matSubEl = document.getElementById('materialSubtotal');
     const labSubEl = document.getElementById('laborSubtotal');
+    const subSubEl = document.getElementById('subSubtotal');
     if (matSubEl) matSubEl.textContent = formatMoney(materialTotal);
-    if (labSubEl) labSubEl.textContent = formatMoney(laborTotal);
-
-    // Show/hide section rows
+    if (labSubEl) labSubEl.textContent = formatMoney(myLaborTotal);
+    if (subSubEl) subSubEl.textContent = formatMoney(subTotal);
     const matRow = document.getElementById('materialSubRow');
     const labRow = document.getElementById('laborSubRow');
-    if (matRow) matRow.style.display = (materialTotal > 0 || laborTotal > 0) ? 'flex' : 'none';
-    if (labRow) labRow.style.display = (materialTotal > 0 || laborTotal > 0) ? 'flex' : 'none';
+    const subRow = document.getElementById('subSubRow');
+    if (matRow) matRow.style.display = hasMultipleTypes && materialTotal > 0 ? 'flex' : 'none';
+    if (labRow) labRow.style.display = hasMultipleTypes && myLaborTotal > 0 ? 'flex' : 'none';
+    if (subRow) subRow.style.display = hasMultipleTypes && subTotal > 0 ? 'flex' : 'none';
+
+    // O&P calculation
+    let opAmt = 0;
+    const opInput = document.getElementById('opRateInput');
+    if (overheadPercent > 0 || document.getElementById('opToggle')?.classList.contains('on')) {
+      overheadPercent = parseFloat(opInput?.value) || 0;
+      opAmt = grandTotal * (overheadPercent / 100);
+      document.getElementById('opLabel').textContent = `Overhead & Profit (${overheadPercent}%)`;
+      document.getElementById('opDisplay').textContent = formatMoney(opAmt);
+    }
 
     let taxAmt = 0;
+    const afterOP = grandTotal + opAmt;
     if (taxEnabled) {
       const taxRate = parseFloat(document.getElementById('taxRateInput').value) || 0;
-      const taxableAmount = taxScope === 'materials' ? materialTotal : grandTotal;
+      const taxableAmount = taxScope === 'materials' ? materialTotal + (materialTotal / grandTotal * opAmt || 0) : afterOP;
       taxAmt = taxableAmount * (taxRate / 100);
       const scopeLabel = taxScope === 'materials' ? ' (materials)' : '';
       document.getElementById('taxLabel').textContent = `Tax (${taxRate}%)${scopeLabel}`;
       document.getElementById('taxDisplay').textContent = formatMoney(taxAmt);
     }
-    document.getElementById('totalDisplay').textContent = formatMoney(grandTotal + taxAmt);
+    document.getElementById('totalDisplay').textContent = formatMoney(afterOP + taxAmt);
+  }
+
+  function toggleOP() {
+    const toggle = document.getElementById('opToggle');
+    const isOn = toggle.classList.contains('on');
+    if (isOn) {
+      toggle.classList.remove('on');
+      document.getElementById('opRateWrap').style.display = 'none';
+      document.getElementById('opRow').style.display = 'none';
+      overheadPercent = 0;
+    } else {
+      toggle.classList.add('on');
+      document.getElementById('opRateWrap').style.display = 'flex';
+      document.getElementById('opRow').style.display = '';
+      overheadPercent = parseFloat(document.getElementById('opRateInput').value) || 15;
+    }
+    calcAll();
+  }
+
+  function setOPVisible(visible, btn) {
+    overheadVisible = visible;
+    btn.parentElement.querySelectorAll('.tax-scope-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
   }
 
   function toggleTax() {
@@ -4730,7 +4874,8 @@
 
     // Gather line items from Items table, grouped by type
     let materialItemsHtml = '';
-    let laborItemsHtml = '';
+    let myLaborItemsHtml = '';
+    let subItemsHtml = '';
     const quoteRows = document.querySelectorAll('#lineItemsBody .line-item-row');
     quoteRows.forEach(row => {
       const descInput = row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]');
@@ -4752,17 +4897,21 @@
           <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
         </tr>`;
       const noteHtml = note ? `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>` : '';
-      if (lineType === 'labor') { laborItemsHtml += rowHtml + noteHtml; }
+      if (lineType === 'mylabor') { myLaborItemsHtml += rowHtml + noteHtml; }
+      else if (lineType === 'sub') { subItemsHtml += rowHtml + noteHtml; }
       else { materialItemsHtml += rowHtml + noteHtml; }
     });
 
-    // Build combined items with section headers
+    // Build combined items with section headers (only when multiple types)
+    const sectionHeader = (title) => `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">${title}</td></tr>`;
+    const typeCount = (materialItemsHtml ? 1 : 0) + (myLaborItemsHtml ? 1 : 0) + (subItemsHtml ? 1 : 0);
     let lineItemsHtml = '';
-    if (materialItemsHtml && laborItemsHtml) {
-      lineItemsHtml = `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Materials</td></tr>` + materialItemsHtml;
-      lineItemsHtml += `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Labor</td></tr>` + laborItemsHtml;
+    if (typeCount > 1) {
+      if (materialItemsHtml) lineItemsHtml += sectionHeader('Materials') + materialItemsHtml;
+      if (myLaborItemsHtml) lineItemsHtml += sectionHeader('Labor') + myLaborItemsHtml;
+      if (subItemsHtml) lineItemsHtml += sectionHeader('Sub / Employee') + subItemsHtml;
     } else {
-      lineItemsHtml = materialItemsHtml + laborItemsHtml;
+      lineItemsHtml = materialItemsHtml + myLaborItemsHtml + subItemsHtml;
     }
 
     // Gather attachments
@@ -4865,6 +5014,7 @@
   <div style="display:flex;justify-content:flex-end;margin-bottom:32px;">
     <div style="width:240px;">
       <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span style="color:#6B7280;">Subtotal</span><span style="font-family:'DM Mono',monospace;font-weight:500;">${subtotal}</span></div>
+      ${overheadVisible && overheadPercent > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span style="color:#6B7280;">Contractor's Fee (${overheadPercent}%)</span><span style="font-family:'DM Mono',monospace;font-weight:500;">${formatMoney(parseFloat(subtotal.replace(/[$,]/g,'')) * overheadPercent / 100)}</span></div>` : ''}
       ${showTax ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span style="color:#6B7280;">${taxLabel}</span><span style="font-family:'DM Mono',monospace;font-weight:500;">${taxAmt}</span></div>` : ''}
       <div style="border-top:2px solid #1C1C1E;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:flex-end;">
         <span style="font-size:14px;font-weight:600;">Total</span>
@@ -4969,6 +5119,9 @@
       notes: document.getElementById('notes').value,
       taxEnabled: taxEnabled,
       taxRate: document.getElementById('taxRateInput').value,
+      taxScope: taxScope,
+      overheadPercent: overheadPercent,
+      overheadVisible: overheadVisible,
       total: document.getElementById('totalDisplay').textContent,
       subtotal: document.getElementById('subtotalDisplay').textContent,
       createdAt: currentQuoteId ? (getQuotes().find(q=>q.id===currentQuoteId)?.createdAt || Date.now()) : Date.now(),
@@ -5319,6 +5472,9 @@
         notes: quoteData.notes,
         taxEnabled: quoteData.taxEnabled,
         taxRate: quoteData.taxRate,
+        taxScope: quoteData.taxScope || 'all',
+        overheadPercent: quoteData.overheadPercent || 0,
+        overheadVisible: quoteData.overheadVisible || false,
         total: quoteData.total,
         subtotal: quoteData.subtotal,
       };
@@ -5409,8 +5565,13 @@
           row.dataset.lineType = item.lineType;
           const badge = row.querySelector('.line-type-badge');
           if (badge) {
-            badge.textContent = item.lineType === 'labor' ? 'Labor' : 'Material';
-            badge.className = 'line-type-badge ' + (item.lineType === 'labor' ? 'type-labor' : 'type-material');
+            const info = getTypeBadgeInfo(item.lineType);
+            badge.textContent = info.label;
+            badge.className = 'line-type-badge ' + info.cls;
+          }
+          if (item.lineType === 'mylabor') {
+            const mBtn = row.querySelector('.line-markup-btn');
+            if (mBtn) mBtn.style.display = 'none';
           }
         }
         // Restore markup
@@ -5813,6 +5974,9 @@
       document.querySelectorAll('#page-quote input:not([readonly]), #page-quote textarea').forEach(el => el.value = '');
       dateInput.value = today.toISOString().split('T')[0];
       if (taxEnabled) toggleTax();
+      // Reset O&P
+      if (document.getElementById('opToggle')?.classList.contains('on')) toggleOP();
+      overheadPercent = 0; overheadVisible = false;
       document.querySelectorAll('#categorySections .item-card').forEach(card => {
         card.classList.remove('checked');
         const cb = card.querySelector('.item-check input');
@@ -5887,6 +6051,18 @@
     if (q.taxEnabled && !taxEnabled) {
       document.getElementById('taxRateInput').value = q.taxRate || '8';
       toggleTax();
+    }
+
+    // Restore O&P
+    if (q.overheadPercent > 0) {
+      document.getElementById('opRateInput').value = q.overheadPercent;
+      if (!document.getElementById('opToggle').classList.contains('on')) toggleOP();
+      overheadVisible = q.overheadVisible || false;
+      if (overheadVisible) {
+        const btns = document.querySelectorAll('#opRow .tax-scope-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        btns[1]?.classList.add('active');
+      }
     }
 
     if (q.checkedItems) {
@@ -6071,6 +6247,9 @@
       notes: q.notes,
       taxEnabled: q.taxEnabled,
       taxRate: q.taxRate,
+      taxScope: q.taxScope || 'all',
+      overheadPercent: q.overheadPercent || 0,
+      overheadVisible: q.overheadVisible || false,
       subtotal: q.subtotal,
       total: q.total,
     };
@@ -6081,7 +6260,12 @@
       qty: i.qty || 0,
       rate: i.rate || 0,
       note: i.note || '',
-      source: i.source_name || i.source || ''
+      source: i.source_name || i.source || '',
+      lineType: i.lineType || i.line_type || 'material',
+      markupEnabled: i.markupEnabled || i.markup_enabled || false,
+      markupMode: i.markupMode || i.markup_mode || 'percent',
+      markupValue: i.markupValue || i.markup_value || 0,
+      clientRate: i.clientRate || i.client_rate || i.rate || 0,
     }));
 
 
@@ -6743,11 +6927,11 @@
     row.dataset.markupValue = '0';
     const unitVal = unit || 'each';
     const unitOptions = ['each','hr','sqft','lnft','sq','job'];
-    const typeCls = row.dataset.lineType === 'labor' ? 'type-labor' : 'type-material';
-    const typeLabel = row.dataset.lineType === 'labor' ? 'Labor' : 'Material';
+    const typeInfo = getTypeBadgeInfo(row.dataset.lineType);
+    const hideMarkup = row.dataset.lineType === 'mylabor' ? ' style="display:none;"' : '';
     row.innerHTML = `
       <div class="line-desc-wrap" style="display:flex;align-items:center;gap:6px;">
-        <span class="line-type-badge ${typeCls}" onclick="toggleLineType(this);calcInvTotals()" title="Click to switch Material/Labor">${typeLabel}</span>
+        <span class="line-type-badge ${typeInfo.cls}" onclick="toggleLineType(this);calcInvTotals()" title="Click to switch type">${typeInfo.label}</span>
         <input type="text" placeholder="Description" value="${desc ? escapeHtml(desc) : ''}" style="flex:1;">
       </div>
       <select class="unit-select" onchange="updateInvUnit(this)">${unitOptions.map(u => `<option value="${u}"${u===unitVal?' selected':''}>${u}</option>`).join('')}</select>
@@ -6759,7 +6943,7 @@
       <div class="line-total">$0.00</div>
       <div style="display:flex;gap:2px;">
         <button class="line-note-btn" onclick="toggleLineNote(this)" title="Add note">📝</button>
-        <button class="line-markup-btn" onclick="toggleInvLineMarkup(this)" title="Add markup">%</button>
+        <button class="line-markup-btn" onclick="toggleInvLineMarkup(this)" title="Add markup"${hideMarkup}>%</button>
       </div>
       <button class="line-remove" onclick="removeInvLine(this)" title="Remove">×</button>
       <div class="line-note-row" style="display:none;">
@@ -6842,11 +7026,14 @@
   }
 
   let invTaxScope = 'all';
+  let invOverheadPercent = 0;
+  let invOverheadVisible = false;
 
   function calcInvTotals() {
     let subtotal = 0;
     let invMaterialTotal = 0;
-    let invLaborTotal = 0;
+    let invMyLaborTotal = 0;
+    let invSubTotal = 0;
 
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const inputs = row.querySelectorAll('input[type="number"]');
@@ -6865,7 +7052,9 @@
         if (resultEl) resultEl.textContent = 'Client: ' + formatMoney(clientRate) + '/unit';
       }
 
-      if (row.dataset.lineType === 'labor') { invLaborTotal += amount; }
+      const lt = row.dataset.lineType;
+      if (lt === 'mylabor') { invMyLaborTotal += amount; }
+      else if (lt === 'sub') { invSubTotal += amount; }
       else { invMaterialTotal += amount; }
       subtotal += amount;
     });
@@ -6886,26 +7075,65 @@
 
     document.getElementById('invSubtotal').textContent = formatMoney(subtotal);
 
-    // Section subtotals
+    // Section subtotals — show only when multiple types
+    const hasMultipleTypes = (invMaterialTotal > 0 ? 1 : 0) + (invMyLaborTotal > 0 ? 1 : 0) + (invSubTotal > 0 ? 1 : 0) > 1;
     const matSubEl = document.getElementById('invMaterialSubtotal');
     const labSubEl = document.getElementById('invLaborSubtotal');
+    const subSubEl = document.getElementById('invSubSubtotal');
     if (matSubEl) matSubEl.textContent = formatMoney(invMaterialTotal);
-    if (labSubEl) labSubEl.textContent = formatMoney(invLaborTotal);
+    if (labSubEl) labSubEl.textContent = formatMoney(invMyLaborTotal);
+    if (subSubEl) subSubEl.textContent = formatMoney(invSubTotal);
     const matRow = document.getElementById('invMaterialSubRow');
     const labRow = document.getElementById('invLaborSubRow');
-    if (matRow) matRow.style.display = (invMaterialTotal > 0 || invLaborTotal > 0) ? 'flex' : 'none';
-    if (labRow) labRow.style.display = (invMaterialTotal > 0 || invLaborTotal > 0) ? 'flex' : 'none';
+    const subRow = document.getElementById('invSubSubRow');
+    if (matRow) matRow.style.display = hasMultipleTypes && invMaterialTotal > 0 ? 'flex' : 'none';
+    if (labRow) labRow.style.display = hasMultipleTypes && invMyLaborTotal > 0 ? 'flex' : 'none';
+    if (subRow) subRow.style.display = hasMultipleTypes && invSubTotal > 0 ? 'flex' : 'none';
+
+    // O&P calculation
+    let invOpAmt = 0;
+    const invOpInput = document.getElementById('invOpRateInput');
+    if (invOverheadPercent > 0 || document.getElementById('invOpToggle')?.classList.contains('on')) {
+      invOverheadPercent = parseFloat(invOpInput?.value) || 0;
+      invOpAmt = subtotal * (invOverheadPercent / 100);
+      document.getElementById('invOpLabel').textContent = `Overhead & Profit (${invOverheadPercent}%)`;
+      document.getElementById('invOpDisplay').textContent = formatMoney(invOpAmt);
+    }
 
     let taxAmt = 0;
+    const invAfterOP = subtotal + invOpAmt;
     if (invTaxEnabled) {
       const rate = parseFloat(document.getElementById('invTaxRateInput').value) || 0;
-      const taxableAmount = invTaxScope === 'materials' ? invMaterialTotal : subtotal;
+      const taxableAmount = invTaxScope === 'materials' ? invMaterialTotal + (subtotal > 0 ? (invMaterialTotal / subtotal * invOpAmt) : 0) : invAfterOP;
       taxAmt = taxableAmount * (rate / 100);
       const scopeLabel = invTaxScope === 'materials' ? ' (materials)' : '';
       document.getElementById('invTaxLabel').textContent = `Tax (${rate}%)${scopeLabel}`;
       document.getElementById('invTaxDisplay').textContent = formatMoney(taxAmt);
     }
-    document.getElementById('invTotalDisplay').textContent = formatMoney(subtotal + taxAmt);
+    document.getElementById('invTotalDisplay').textContent = formatMoney(invAfterOP + taxAmt);
+  }
+
+  function toggleInvOP() {
+    const toggle = document.getElementById('invOpToggle');
+    const isOn = toggle.classList.contains('on');
+    if (isOn) {
+      toggle.classList.remove('on');
+      document.getElementById('invOpRateWrap').style.display = 'none';
+      document.getElementById('invOpRow').style.display = 'none';
+      invOverheadPercent = 0;
+    } else {
+      toggle.classList.add('on');
+      document.getElementById('invOpRateWrap').style.display = 'flex';
+      document.getElementById('invOpRow').style.display = '';
+      invOverheadPercent = parseFloat(document.getElementById('invOpRateInput').value) || 15;
+    }
+    calcInvTotals();
+  }
+
+  function setInvOPVisible(visible, btn) {
+    invOverheadVisible = visible;
+    btn.parentElement.querySelectorAll('.tax-scope-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
   }
 
   function toggleInvTax() {
@@ -6946,6 +7174,9 @@
       invLineCounter = 0;
       // Reset tax
       if (invTaxEnabled) toggleInvTax();
+      // Reset O&P
+      if (document.getElementById('invOpToggle')?.classList.contains('on')) toggleInvOP();
+      invOverheadPercent = 0; invOverheadVisible = false;
       // Reset accordions
       try { resetInvAccordions(); } catch(e) {}
       // Reset totals displays explicitly
@@ -7005,6 +7236,18 @@
       toggleInvTax();
     }
 
+    // Restore O&P
+    if (inv.overheadPercent > 0) {
+      document.getElementById('invOpRateInput').value = inv.overheadPercent;
+      if (!document.getElementById('invOpToggle').classList.contains('on')) toggleInvOP();
+      invOverheadVisible = inv.overheadVisible || false;
+      if (invOverheadVisible) {
+        const btns = document.querySelectorAll('#invOpRow .tax-scope-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        btns[1]?.classList.add('active');
+      }
+    }
+
     // Restore accordion checked items
     if (inv.checkedItems) {
       inv.checkedItems.forEach(ci => {
@@ -7037,8 +7280,13 @@
           row.dataset.lineType = item.lineType;
           const badge = row.querySelector('.line-type-badge');
           if (badge) {
-            badge.textContent = item.lineType === 'labor' ? 'Labor' : 'Material';
-            badge.className = 'line-type-badge ' + (item.lineType === 'labor' ? 'type-labor' : 'type-material');
+            const info = getTypeBadgeInfo(item.lineType);
+            badge.textContent = info.label;
+            badge.className = 'line-type-badge ' + info.cls;
+          }
+          if (item.lineType === 'mylabor') {
+            const mBtn = row.querySelector('.line-markup-btn');
+            if (mBtn) mBtn.style.display = 'none';
           }
         }
         // Restore markup
@@ -7153,6 +7401,9 @@
       notes: document.getElementById('invNotes').value,
       taxEnabled: invTaxEnabled,
       taxRate: document.getElementById('invTaxRateInput').value,
+      taxScope: invTaxScope,
+      overheadPercent: invOverheadPercent,
+      overheadVisible: invOverheadVisible,
       total: document.getElementById('invTotalDisplay').textContent,
       subtotal: document.getElementById('invSubtotal').textContent,
       fromQuoteId: existing?.fromQuoteId || '',
@@ -7292,8 +7543,9 @@
       dueDate = fmtDate(d.toISOString().split('T')[0]);
     }
 
-    let materialItemsHtml = '';
-    let laborItemsHtml = '';
+    let bihMaterialHtml = '';
+    let bihMyLaborHtml = '';
+    let bihSubHtml = '';
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
       if (!desc) return;
@@ -7306,15 +7558,19 @@
       const lineType = row.dataset.lineType || 'material';
       const rowHtml = `<tr><td style="padding:8px 10px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:13px;">${escapeHtml(desc)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-size:12px;text-align:center;color:#6B7280;">${unit}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:center;">${qty}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;">$${clientRate.toFixed(2)}</td><td style="padding:8px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:monospace;text-align:right;font-weight:600;">$${amt.toFixed(2)}</td></tr>`;
       const noteHtml = note ? `<tr><td colspan="5" style="padding:2px 10px 8px 24px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>` : '';
-      if (lineType === 'labor') { laborItemsHtml += rowHtml + noteHtml; }
-      else { materialItemsHtml += rowHtml + noteHtml; }
+      if (lineType === 'mylabor') { bihMyLaborHtml += rowHtml + noteHtml; }
+      else if (lineType === 'sub') { bihSubHtml += rowHtml + noteHtml; }
+      else { bihMaterialHtml += rowHtml + noteHtml; }
     });
+    const bihSH = (t) => `<tr><td colspan="5" style="padding:8px 10px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">${t}</td></tr>`;
+    const bihTC = (bihMaterialHtml ? 1 : 0) + (bihMyLaborHtml ? 1 : 0) + (bihSubHtml ? 1 : 0);
     let itemsHtml = '';
-    if (materialItemsHtml && laborItemsHtml) {
-      itemsHtml = `<tr><td colspan="5" style="padding:8px 10px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Materials</td></tr>` + materialItemsHtml;
-      itemsHtml += `<tr><td colspan="5" style="padding:8px 10px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Labor</td></tr>` + laborItemsHtml;
+    if (bihTC > 1) {
+      if (bihMaterialHtml) itemsHtml += bihSH('Materials') + bihMaterialHtml;
+      if (bihMyLaborHtml) itemsHtml += bihSH('Labor') + bihMyLaborHtml;
+      if (bihSubHtml) itemsHtml += bihSH('Sub / Employee') + bihSubHtml;
     } else {
-      itemsHtml = materialItemsHtml + laborItemsHtml;
+      itemsHtml = bihMaterialHtml + bihMyLaborHtml + bihSubHtml;
     }
 
     // Gather invoice photos
@@ -7355,6 +7611,7 @@
       </table>
       <table style="width:100%;margin-bottom:20px;"><tr><td></td><td style="width:220px;vertical-align:top;">
         <table style="width:100%;"><tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Subtotal</td><td style="padding:4px 0;text-align:right;font-family:monospace;font-size:13px;">${subtotal}</td></tr></table>
+        ${invOverheadVisible && invOverheadPercent > 0 ? `<table style="width:100%;"><tr><td style="padding:4px 0;font-size:13px;color:#6B7280;">Contractor's Fee (${invOverheadPercent}%)</td><td style="padding:4px 0;text-align:right;font-family:monospace;font-size:13px;">${formatMoney(parseFloat(subtotal.replace(/[$,]/g,'')) * invOverheadPercent / 100)}</td></tr></table>` : ''}
         <div style="border-top:2px solid #1C1C1E;margin-top:6px;padding-top:8px;"><table style="width:100%;"><tr><td style="font-weight:700;">Amount Due</td><td style="text-align:right;font-size:22px;font-weight:800;">${total}</td></tr></table></div>
       </td></tr></table>
       ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${escapeHtml(notes)}</div></div>` : ''}
@@ -7439,7 +7696,8 @@
 
     // Line items grouped by type
     let invPdfMaterials = '';
-    let invPdfLabor = '';
+    let invPdfMyLabor = '';
+    let invPdfSub = '';
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const descInput = row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]');
       const desc = descInput?.value || '';
@@ -7459,15 +7717,19 @@
         <td style="padding:10px 12px;${note ? '' : 'border-bottom:1px solid #E0DBD4;'}font-family:'DM Mono',monospace;font-size:13px;color:#1C1C1E;text-align:right;font-weight:500;">${formatMoney(amount)}</td>
       </tr>`;
       const noteHtml = note ? `<tr><td colspan="5" style="padding:2px 12px 10px 28px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;font-style:italic;">↳ ${escapeHtml(note)}</td></tr>` : '';
-      if (lineType === 'labor') { invPdfLabor += rowHtml + noteHtml; }
+      if (lineType === 'mylabor') { invPdfMyLabor += rowHtml + noteHtml; }
+      else if (lineType === 'sub') { invPdfSub += rowHtml + noteHtml; }
       else { invPdfMaterials += rowHtml + noteHtml; }
     });
+    const ipSH = (t) => `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">${t}</td></tr>`;
+    const ipTC = (invPdfMaterials ? 1 : 0) + (invPdfMyLabor ? 1 : 0) + (invPdfSub ? 1 : 0);
     let lineItemsHtml = '';
-    if (invPdfMaterials && invPdfLabor) {
-      lineItemsHtml = `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Materials</td></tr>` + invPdfMaterials;
-      lineItemsHtml += `<tr><td colspan="5" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;border-bottom:1px solid #E0DBD4;">Labor</td></tr>` + invPdfLabor;
+    if (ipTC > 1) {
+      if (invPdfMaterials) lineItemsHtml += ipSH('Materials') + invPdfMaterials;
+      if (invPdfMyLabor) lineItemsHtml += ipSH('Labor') + invPdfMyLabor;
+      if (invPdfSub) lineItemsHtml += ipSH('Sub / Employee') + invPdfSub;
     } else {
-      lineItemsHtml = invPdfMaterials + invPdfLabor;
+      lineItemsHtml = invPdfMaterials + invPdfMyLabor + invPdfSub;
     }
 
     // Biz logo from settings
@@ -7541,6 +7803,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   <div style="display:flex;justify-content:flex-end;margin-bottom:32px;">
     <div style="width:240px;">
       <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span style="color:#6B7280;">Subtotal</span><span style="font-family:'DM Mono',monospace;font-weight:500;">${subtotal}</span></div>
+      ${invOverheadVisible && invOverheadPercent > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span style="color:#6B7280;">Contractor's Fee (${invOverheadPercent}%)</span><span style="font-family:'DM Mono',monospace;font-weight:500;">${formatMoney(parseFloat(subtotal.replace(/[$,]/g,'')) * invOverheadPercent / 100)}</span></div>` : ''}
       ${showTax ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;"><span style="color:#6B7280;">${taxLabel}</span><span style="font-family:'DM Mono',monospace;font-weight:500;">${taxAmt}</span></div>` : ''}
       <div style="border-top:2px solid #1C1C1E;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;align-items:flex-end;">
         <span style="font-size:14px;font-weight:600;">${isPaid ? 'Amount Paid' : 'Amount Due'}</span>
@@ -7878,41 +8141,46 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   function pnlPrevMonth() { pnlMonth--; if (pnlMonth < 0) { pnlMonth = 11; pnlYear--; } renderPnl(); }
   function pnlNextMonth() { pnlMonth++; if (pnlMonth > 11) { pnlMonth = 0; pnlYear++; } renderPnl(); }
 
-  // Calculate auto-costs from invoice line items with markup
+  // Calculate auto-costs from invoice line items
+  // Material and Sub/Employee items ALWAYS have a cost (base rate × qty)
+  // My Labor items NEVER have a cost (full amount is profit)
   function getInvoiceAutoCosts(inv) {
     if (!inv.items || inv.items.length === 0) return 0;
     return inv.items.reduce((total, item) => {
-      if (item.markupEnabled) {
+      const lt = item.lineType || 'material';
+      if (lt === 'material' || lt === 'sub') {
         const qty = parseFloat(item.qty) || 0;
         const baseCost = parseFloat(item.rate) || 0;
         return total + (qty * baseCost);
       }
-      return total;
+      return total; // mylabor = no cost
     }, 0);
   }
 
   // Get detailed auto-cost breakdown per invoice
   function getInvoiceAutoCostItems(inv) {
     if (!inv.items || inv.items.length === 0) return [];
-    return inv.items.filter(item => item.markupEnabled).map(item => {
-      const qty = parseFloat(item.qty) || 0;
-      const baseCost = parseFloat(item.rate) || 0;
-      const clientRate = parseFloat(item.clientRate) || baseCost;
-      return {
-        desc: item.desc,
-        qty,
-        baseCost,
-        clientRate,
-        totalCost: qty * baseCost,
-        totalRevenue: qty * clientRate,
-        profit: qty * (clientRate - baseCost),
-        lineType: item.lineType || 'material',
-        invoiceNum: inv.invoiceNum,
-        invoiceId: inv.id,
-        date: inv.date,
-        clientName: inv.clientName,
-      };
-    });
+    return inv.items
+      .filter(item => (item.lineType || 'material') === 'material' || (item.lineType || 'material') === 'sub')
+      .map(item => {
+        const qty = parseFloat(item.qty) || 0;
+        const baseCost = parseFloat(item.rate) || 0;
+        const clientRate = parseFloat(item.clientRate) || baseCost;
+        return {
+          desc: item.desc,
+          qty,
+          baseCost,
+          clientRate,
+          totalCost: qty * baseCost,
+          totalRevenue: qty * clientRate,
+          profit: qty * (clientRate - baseCost),
+          lineType: item.lineType || 'material',
+          invoiceNum: inv.invoiceNum,
+          invoiceId: inv.id,
+          date: inv.date,
+          clientName: inv.clientName,
+        };
+      });
   }
 
   function pnlGetMonthData(year, month) {
@@ -7976,12 +8244,25 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     if (d.exp.length === 0 && d.autoCostItems.length === 0) {
       expHtml = '<div style="padding:16px;text-align:center;color:var(--gray);font-size:13px;">No expenses</div>';
     } else {
-      // Auto-costs from invoice markup
+      // Auto-costs from invoices — split by type
       if (d.autoCostItems.length > 0) {
-        expHtml += `<div class="pnl-cat-header" style="color:var(--amber-deep);">📦 Invoice Costs (auto) · ${formatMoney(d.autoCostTotal)}</div>`;
-        d.autoCostItems.forEach(ac => {
-          expHtml += `<div class="pnl-list-item"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(ac.desc)}</span><span class="pnl-list-secondary">${escapeHtml(ac.clientName || '')} · ${escapeHtml(ac.invoiceNum)} · ${ac.qty} × ${formatMoney(ac.baseCost)}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(ac.totalCost)}</span></div>`;
-        });
+        const matCosts = d.autoCostItems.filter(ac => ac.lineType === 'material');
+        const subCosts = d.autoCostItems.filter(ac => ac.lineType === 'sub');
+        const matTotal = matCosts.reduce((s, ac) => s + ac.totalCost, 0);
+        const subTotal = subCosts.reduce((s, ac) => s + ac.totalCost, 0);
+
+        if (matCosts.length > 0) {
+          expHtml += `<div class="pnl-cat-header" style="color:var(--green);">🟢 Material Costs · ${formatMoney(matTotal)}</div>`;
+          matCosts.forEach(ac => {
+            expHtml += `<div class="pnl-list-item"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(ac.desc)}</span><span class="pnl-list-secondary">${escapeHtml(ac.clientName || '')} · ${escapeHtml(ac.invoiceNum)} · ${ac.qty} × ${formatMoney(ac.baseCost)}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(ac.totalCost)}</span></div>`;
+          });
+        }
+        if (subCosts.length > 0) {
+          expHtml += `<div class="pnl-cat-header" style="color:var(--amber-deep);">🟠 Sub/Employee Costs · ${formatMoney(subTotal)}</div>`;
+          subCosts.forEach(ac => {
+            expHtml += `<div class="pnl-list-item"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(ac.desc)}</span><span class="pnl-list-secondary">${escapeHtml(ac.clientName || '')} · ${escapeHtml(ac.invoiceNum)} · ${ac.qty} × ${formatMoney(ac.baseCost)}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(ac.totalCost)}</span></div>`;
+          });
+        }
       }
       // Manual expenses
       if (d.exp.length > 0) {
@@ -7999,6 +8280,8 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     document.getElementById('pnlExpTotalBottom').textContent = formatMoney(d.expTotal);
 
     // Summary
+    const matAutoCost = d.autoCostItems.filter(ac => ac.lineType === 'material').reduce((s, ac) => s + ac.totalCost, 0);
+    const subAutoCost = d.autoCostItems.filter(ac => ac.lineType === 'sub').reduce((s, ac) => s + ac.totalCost, 0);
     const jobExp = d.exp.filter(e => e.quote_id || e.invoice_id);
     const overheadExp = d.exp.filter(e => !e.quote_id && !e.invoice_id);
     const jobCost = jobExp.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
@@ -8017,9 +8300,9 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
     document.getElementById('pnlMonthlySummary').innerHTML = `
       <div class="pnl-summary-row"><span>Revenue</span><span style="color:var(--green);">${formatMoney(d.revTotal)}</span></div>
-      ${d.autoCostTotal > 0 ? `<div class="pnl-summary-row"><span>Invoice Costs (markup)</span><span>-${formatMoney(d.autoCostTotal)}</span></div>` : ''}
-      <div class="pnl-summary-row"><span>Job Expenses (manual)</span><span>-${formatMoney(jobCost)}</span></div>
-      <div class="pnl-summary-row"><span>Overhead</span><span>-${formatMoney(overheadCost)}</span></div>
+      ${matAutoCost > 0 ? `<div class="pnl-summary-row"><span>Material Costs (auto)</span><span>-${formatMoney(matAutoCost)}</span></div>` : ''}
+      ${subAutoCost > 0 ? `<div class="pnl-summary-row"><span>Sub/Employee Costs (auto)</span><span>-${formatMoney(subAutoCost)}</span></div>` : ''}
+      <div class="pnl-summary-row"><span>Manual Expenses</span><span>-${formatMoney(jobCost + overheadCost)}</span></div>
       <div class="pnl-summary-total"><span>Net Profit</span><span style="color:${d.profit >= 0 ? 'var(--green)' : '#ef4444'};">${formatMoney(d.profit)}</span></div>
       ${vsHtml}
     `;
@@ -8094,10 +8377,21 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
           <div class="pnl-job-body">
             <div class="pnl-job-section-label">Billed Items</div>
             ${billedHtml}
-            ${j.autoCostItems && j.autoCostItems.length > 0 ? `
-            <div class="pnl-job-section-label" style="margin-top:8px;color:var(--amber-deep);">📦 Invoice Costs (from markup)</div>
-            ${j.autoCostItems.map(ac => `<div class="pnl-job-row"><span>${escapeHtml(ac.desc)}<br><span style="font-size:10px;color:var(--gray);">${ac.qty} × ${formatMoney(ac.baseCost)} (your cost)</span></span><span></span><span style="font-family:var(--font-mono);color:var(--red);text-align:right;">-${formatMoney(ac.totalCost)}</span><span></span></div>`).join('')}
-            ` : ''}
+            ${(() => {
+              if (!j.autoCostItems || j.autoCostItems.length === 0) return '';
+              const matItems = j.autoCostItems.filter(ac => ac.lineType === 'material');
+              const subItems = j.autoCostItems.filter(ac => ac.lineType === 'sub');
+              let html = '';
+              if (matItems.length > 0) {
+                html += `<div class="pnl-job-section-label" style="margin-top:8px;color:var(--green);">🟢 Material Costs</div>`;
+                html += matItems.map(ac => `<div class="pnl-job-row"><span>${escapeHtml(ac.desc)}<br><span style="font-size:10px;color:var(--gray);">${ac.qty} × ${formatMoney(ac.baseCost)} (your cost)</span></span><span></span><span style="font-family:var(--font-mono);color:var(--red);text-align:right;">-${formatMoney(ac.totalCost)}</span><span></span></div>`).join('');
+              }
+              if (subItems.length > 0) {
+                html += `<div class="pnl-job-section-label" style="margin-top:8px;color:var(--amber-deep);">🟠 Sub/Employee Costs</div>`;
+                html += subItems.map(ac => `<div class="pnl-job-row"><span>${escapeHtml(ac.desc)}<br><span style="font-size:10px;color:var(--gray);">${ac.qty} × ${formatMoney(ac.baseCost)} (their rate)</span></span><span></span><span style="font-family:var(--font-mono);color:var(--red);text-align:right;">-${formatMoney(ac.totalCost)}</span><span></span></div>`).join('');
+              }
+              return html;
+            })()}
             <div class="pnl-job-section-label" style="margin-top:8px;">Manual Expenses</div>
             ${expHtml}
             <div class="pnl-job-add"><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();showExpenseModal('${j.id}','${j.type}')">+ Add Expense</button></div>
@@ -8171,7 +8465,144 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
   // Placeholder for PDF export
   function exportPnlPdf() {
-    showToast('PDF export coming soon');
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthLabel = months[pnlMonth] + ' ' + pnlYear;
+    const d = pnlGetMonthData(pnlYear, pnlMonth);
+    const margin = d.revTotal > 0 ? ((d.profit / d.revTotal) * 100).toFixed(1) : '0.0';
+    const bizName = _profileCache?.biz_name || 'Builders Invoice';
+    const bizAddress = _profileCache?.biz_address || '';
+    const bizPhone = _profileCache?.biz_phone || '';
+    const bizEmail = _profileCache?.biz_email || '';
+
+    // Revenue rows
+    const revRows = d.rev.map(inv =>
+      `<tr><td style="padding:8px 12px;border-bottom:1px solid #E0DBD4;font-size:13px;">${escapeHtml(inv.clientName || 'Unknown')}</td><td style="padding:8px 12px;border-bottom:1px solid #E0DBD4;font-size:12px;color:#6B7280;">${escapeHtml(inv.jobDesc || inv.invoiceNum)}</td><td style="padding:8px 12px;border-bottom:1px solid #E0DBD4;font-size:12px;color:#6B7280;">${formatDate(inv.date)}</td><td style="padding:8px 12px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;color:#2D7D52;font-weight:600;">${inv.total}</td></tr>`
+    ).join('') || '<tr><td colspan="4" style="padding:16px;text-align:center;color:#6B7280;">No paid invoices this month</td></tr>';
+
+    // Auto-cost rows split by type
+    const matCosts = d.autoCostItems.filter(ac => ac.lineType === 'material');
+    const subCosts = d.autoCostItems.filter(ac => ac.lineType === 'sub');
+    const matTotal = matCosts.reduce((s, ac) => s + ac.totalCost, 0);
+    const subTotal = subCosts.reduce((s, ac) => s + ac.totalCost, 0);
+
+    let costRows = '';
+    if (matCosts.length > 0) {
+      costRows += `<tr><td colspan="4" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">Material Costs · ${formatMoney(matTotal)}</td></tr>`;
+      costRows += matCosts.map(ac =>
+        `<tr><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:12px;">${escapeHtml(ac.desc)}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;">${escapeHtml(ac.clientName || '')}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;">${ac.qty} × ${formatMoney(ac.baseCost)}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;color:#C0392B;">-${formatMoney(ac.totalCost)}</td></tr>`
+      ).join('');
+    }
+    if (subCosts.length > 0) {
+      costRows += `<tr><td colspan="4" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">Sub/Employee Costs · ${formatMoney(subTotal)}</td></tr>`;
+      costRows += subCosts.map(ac =>
+        `<tr><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:12px;">${escapeHtml(ac.desc)}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;">${escapeHtml(ac.clientName || '')}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;">${ac.qty} × ${formatMoney(ac.baseCost)}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;color:#C0392B;">-${formatMoney(ac.totalCost)}</td></tr>`
+      ).join('');
+    }
+
+    // Manual expense rows grouped by category
+    const cats = {};
+    d.exp.forEach(e => { if (!cats[e.category]) cats[e.category] = []; cats[e.category].push(e); });
+    let manualRows = '';
+    Object.keys(cats).sort().forEach(cat => {
+      const catTotal = cats[cat].reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+      manualRows += `<tr><td colspan="4" style="padding:8px 12px;background:#EDEAE5;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">${escapeHtml(cat)} · ${formatMoney(catTotal)}</td></tr>`;
+      cats[cat].forEach(e => {
+        manualRows += `<tr><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:12px;">${escapeHtml(e.description)}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;">${e.notes ? escapeHtml(e.notes) : '—'}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-size:11px;color:#6B7280;">${formatDate(e.date)}</td><td style="padding:6px 12px;border-bottom:1px solid #E0DBD4;font-family:monospace;text-align:right;color:#C0392B;">-${formatMoney(parseFloat(e.amount))}</td></tr>`;
+      });
+    });
+
+    const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>P&L — ${monthLabel}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',sans-serif; color:#1C1C1E; font-size:13px; line-height:1.6; }
+  @page { size:letter; margin:0.6in 0.7in; }
+  @media print { body{-webkit-print-color-adjust:exact;print-color-adjust:exact;} #pdfBar{display:none!important;} #pdfBar+div{display:none!important;} }
+  table { width:100%; border-collapse:collapse; }
+</style>
+</head><body>
+<div style="padding:40px 48px;">
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #1C1C1E;">
+    <div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;">${escapeHtml(bizName)}</div>
+      ${bizAddress ? `<div style="font-size:11px;color:#6B7280;margin-top:2px;">${escapeHtml(bizAddress)}</div>` : ''}
+      ${bizPhone || bizEmail ? `<div style="font-size:11px;color:#6B7280;">${[bizPhone,bizEmail].filter(Boolean).map(escapeHtml).join(' · ')}</div>` : ''}
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#E07A2F;">Profit & Loss</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:700;margin-top:4px;">${monthLabel}</div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;">
+    <div style="padding:14px 16px;border:1px solid #E0DBD4;border-radius:8px;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">Revenue</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#2D7D52;margin-top:6px;">${formatMoney(d.revTotal)}</div>
+    </div>
+    <div style="padding:14px 16px;border:1px solid #E0DBD4;border-radius:8px;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">Expenses</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#C0392B;margin-top:6px;">${formatMoney(d.expTotal)}</div>
+    </div>
+    <div style="padding:14px 16px;border:1px solid #E0DBD4;border-radius:8px;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">Net Profit</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:${d.profit >= 0 ? '#2D7D52' : '#C0392B'};margin-top:6px;">${formatMoney(d.profit)}</div>
+    </div>
+    <div style="padding:14px 16px;border:1px solid #E0DBD4;border-radius:8px;">
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">Margin</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#1C1C1E;margin-top:6px;">${margin}%</div>
+    </div>
+  </div>
+
+  <!-- Revenue -->
+  <div style="margin-bottom:24px;">
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:10px;">Revenue · ${formatMoney(d.revTotal)}</div>
+    <table>
+      <tr style="background:#EDEAE5;"><th style="padding:6px 12px;text-align:left;font-size:10px;font-weight:600;color:#6B7280;">Client</th><th style="padding:6px 12px;text-align:left;font-size:10px;font-weight:600;color:#6B7280;">Job</th><th style="padding:6px 12px;text-align:left;font-size:10px;font-weight:600;color:#6B7280;">Date</th><th style="padding:6px 12px;text-align:right;font-size:10px;font-weight:600;color:#6B7280;">Amount</th></tr>
+      ${revRows}
+    </table>
+  </div>
+
+  <!-- Cost of Goods -->
+  ${d.autoCostTotal > 0 ? `
+  <div style="margin-bottom:24px;">
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:10px;">Cost of Goods (from invoices) · ${formatMoney(d.autoCostTotal)}</div>
+    <table>${costRows}</table>
+  </div>` : ''}
+
+  <!-- Manual Expenses -->
+  ${d.exp.length > 0 ? `
+  <div style="margin-bottom:24px;">
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:10px;">Expenses · ${formatMoney(d.manualExpTotal)}</div>
+    <table>${manualRows}</table>
+  </div>` : ''}
+
+  <!-- Summary -->
+  <div style="background:#1C1C1E;color:white;border-radius:10px;padding:20px 24px;margin-top:24px;">
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;"><span style="color:rgba(255,255,255,0.5);">Revenue</span><span style="font-family:'DM Mono',monospace;color:#2D7D52;">${formatMoney(d.revTotal)}</span></div>
+    ${d.autoCostTotal > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;"><span style="color:rgba(255,255,255,0.5);">Cost of Goods</span><span style="font-family:'DM Mono',monospace;">-${formatMoney(d.autoCostTotal)}</span></div>` : ''}
+    ${d.manualExpTotal > 0 ? `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;"><span style="color:rgba(255,255,255,0.5);">Expenses</span><span style="font-family:'DM Mono',monospace;">-${formatMoney(d.manualExpTotal)}</span></div>` : ''}
+    <div style="display:flex;justify-content:space-between;padding-top:12px;margin-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:18px;font-weight:700;"><span>Net Profit</span><span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:${d.profit >= 0 ? '#2D7D52' : '#ef4444'};">${formatMoney(d.profit)}</span></div>
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;font-size:11px;color:#6B7280;">
+    <span>${escapeHtml(bizName)}</span>
+    <span>Generated ${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}</span>
+  </div>
+</div>
+
+<div id="pdfBar" style="position:fixed;top:0;left:0;right:0;background:#1C1C1E;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;z-index:9999;box-shadow:0 2px 12px rgba(0,0,0,0.3);"><span style="font-family:'Plus Jakarta Sans',sans-serif;color:white;font-size:14px;font-weight:600;">P&L Report — ${monthLabel}</span><div style="display:flex;gap:8px;"><button onclick="document.getElementById('pdfBar').style.display='none';window.print();" style="padding:8px 20px;background:#E07A2F;color:white;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Save as PDF</button><button onclick="window.close()" style="padding:8px 16px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;">Close</button></div></div><div style="height:52px;"></div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); }
+    else { alert('Pop-up blocked. Please allow pop-ups.'); }
   }
 
   // ══════════════════════════════════
