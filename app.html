@@ -3355,10 +3355,15 @@
   }
 
   // Upgrade prompt — shows a toast-style banner
-  function showUpgradePrompt(message) {
+  let _upgradeTargetTier = 'pro';
+
+  function showUpgradePrompt(message, targetTier) {
     const banner = document.getElementById('upgradeBanner');
     if (!banner) return;
+    _upgradeTargetTier = targetTier || 'pro';
     document.getElementById('upgradeBannerMsg').innerHTML = message;
+    const btn = document.getElementById('upgradeBannerBtn');
+    if (btn) btn.textContent = _upgradeTargetTier === 'business' ? 'Go Business →' : 'Go Pro →';
     banner.classList.add('show');
     clearTimeout(banner._timer);
     banner._timer = setTimeout(() => banner.classList.remove('show'), 8000);
@@ -5657,15 +5662,15 @@
 
     // Free tier gates
     if (page === 'clients' && isFree()) {
-      showUpgradePrompt('Customer database requires <strong>Pro</strong>. Upgrade to save and reuse client info.');
+      showUpgradePrompt('Customer database requires <strong>Pro</strong>. Upgrade to save and reuse client info.', 'pro');
       return;
     }
     if (page === 'invoice-edit' && isFree()) {
-      showUpgradePrompt('Invoicing requires <strong>Pro</strong>. Upgrade to create invoices and track payments.');
+      showUpgradePrompt('Invoicing requires <strong>Pro</strong>. Upgrade to create invoices and track payments.', 'pro');
       return;
     }
     if (page === 'pnl' && getUserTier() !== 'business') {
-      showUpgradePrompt('Profit & Loss tracking requires <strong>Business</strong>. Upgrade to track expenses and see job profitability.');
+      showUpgradePrompt('Profit & Loss tracking requires <strong>Business</strong>. Upgrade to track expenses and see job profitability.', 'business');
       return;
     }
 
@@ -5966,7 +5971,7 @@
     // Free tier: 3 quotes/month limit
     if (!hasQuoteQuota()) {
       const used = getQuotasThisMonth();
-      showUpgradePrompt(`You've used all <strong>${used}/${FREE_QUOTE_LIMIT} free quotes</strong> this month. Upgrade to Pro for unlimited quotes.`);
+      showUpgradePrompt(`You've used all <strong>${used}/${FREE_QUOTE_LIMIT} free quotes</strong> this month. Upgrade to Pro for unlimited quotes.`, 'pro');
       return;
     }
     currentQuoteId = null;
@@ -6208,7 +6213,7 @@
 
   async function convertToInvoiceFromDash(id) {
     if (isFree()) {
-      showUpgradePrompt('Invoicing requires <strong>Pro</strong>. Upgrade to convert quotes to invoices.');
+      showUpgradePrompt('Invoicing requires <strong>Pro</strong>. Upgrade to convert quotes to invoices.', 'pro');
       return;
     }
     const quotes = getQuotes();
@@ -6355,7 +6360,7 @@
       { text: 'Unlimited invoices',        tiers: ['pro','business'] },
       { text: 'Basic templates',           tiers: ['free','pro','business'] },
       { text: 'Customer database',         tiers: ['pro','business'] },
-      { text: 'Custom logo (no watermark)',tiers: ['pro','business'] },
+      { text: 'No watermark on PDFs',tiers: ['pro','business'] },
       { text: 'Email quotes & invoices',   tiers: ['pro','business'] },
       { text: 'Payment tracking',          tiers: ['pro','business'] },
       { text: 'Cloud sync',               tiers: ['pro','business'] },
@@ -6389,7 +6394,7 @@
         { text: 'Unlimited quotes & invoices', has: true },
         { text: 'Cloud sync across devices', has: true },
         { text: 'Customer database', has: true },
-        { text: 'Custom logo — no watermark', has: true },
+        { text: 'No watermark on PDFs', has: true },
         { text: 'Email quotes & invoices', has: true },
         { text: 'Payment tracking', has: true },
         { text: 'Expense tracking', has: false },
@@ -7157,7 +7162,7 @@
   function newInvoice() {
     // Free tier: no invoicing (payment tracking is Pro+)
     if (isFree()) {
-      showUpgradePrompt('Invoicing and payment tracking require <strong>Pro</strong>. Upgrade to send invoices and track payments.');
+      showUpgradePrompt('Invoicing and payment tracking require <strong>Pro</strong>. Upgrade to send invoices and track payments.', 'pro');
       return;
     }
     try {
@@ -8827,7 +8832,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 <!-- Upgrade Banner -->
 <div class="upgrade-banner" id="upgradeBanner" style="cursor:pointer;" onclick="document.getElementById('upgradeBanner').classList.remove('show');showPage('settings');setTimeout(()=>{const el=document.getElementById('settingsPlanCard');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},300);">
   <span class="ub-msg" id="upgradeBannerMsg"></span>
-  <button style="background:var(--amber);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">Upgrade →</button>
+  <button id="upgradeBannerBtn" style="background:var(--amber);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-family:var(--font-body);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">View Plans →</button>
   <button class="ub-close" onclick="event.stopPropagation();this.parentElement.classList.remove('show')">×</button>
 </div>
 
