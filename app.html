@@ -622,6 +622,8 @@
   .line-type-badge.type-labor:hover { background:rgba(59,130,246,0.2); }
   .line-type-badge.type-sub { background:rgba(224,122,47,0.1); color:var(--amber-deep); border-color:rgba(224,122,47,0.2); }
   .line-type-badge.type-sub:hover { background:rgba(224,122,47,0.2); }
+  .line-type-badge.type-employee { background:rgba(139,92,246,0.1); color:#7C3AED; border-color:rgba(139,92,246,0.2); }
+  .line-type-badge.type-employee:hover { background:rgba(139,92,246,0.2); }
 
   .line-markup-btn {
     background:none; border:none; cursor:pointer; font-size:12px; padding:4px 6px;
@@ -2545,8 +2547,12 @@
               <span class="totals-section-value" id="laborSubtotal">$0.00</span>
             </div>
             <div class="totals-section-row" id="subSubRow" style="display:none;">
-              <span class="totals-section-label">🟠 Sub/Employee</span>
+              <span class="totals-section-label">🟠 Sub</span>
               <span class="totals-section-value" id="subSubtotal">$0.00</span>
+            </div>
+            <div class="totals-section-row" id="empSubRow" style="display:none;">
+              <span class="totals-section-label">🟣 Employee</span>
+              <span class="totals-section-value" id="empSubtotal">$0.00</span>
             </div>
 
             <div class="totals-row">
@@ -3035,8 +3041,12 @@
                 <span class="totals-section-value" id="invLaborSubtotal">$0.00</span>
               </div>
               <div class="totals-section-row" id="invSubSubRow" style="display:none;">
-                <span class="totals-section-label">🟠 Sub/Employee</span>
+                <span class="totals-section-label">🟠 Sub</span>
                 <span class="totals-section-value" id="invSubSubtotal">$0.00</span>
+              </div>
+              <div class="totals-section-row" id="invEmpSubRow" style="display:none;">
+                <span class="totals-section-label">🟣 Employee</span>
+                <span class="totals-section-value" id="invEmpSubtotal">$0.00</span>
               </div>
               <div class="totals-row">
                 <span class="totals-row-label">Subtotal</span>
@@ -4157,6 +4167,7 @@
 
   function getTypeBadgeInfo(type) {
     if (type === 'mylabor') return { cls: 'type-labor', label: 'My Labor' };
+    if (type === 'employee') return { cls: 'type-employee', label: 'Employee' };
     if (type === 'sub') return { cls: 'type-sub', label: 'Sub' };
     return { cls: 'type-material', label: 'Material' };
   }
@@ -4227,7 +4238,7 @@
 
   function toggleLineType(badge) {
     const row = badge.closest('.line-item-row');
-    const cycle = { material: 'mylabor', mylabor: 'sub', sub: 'material' };
+    const cycle = { material: 'mylabor', mylabor: 'employee', employee: 'sub', sub: 'material' };
     const newType = cycle[row.dataset.lineType] || 'material';
     row.dataset.lineType = newType;
     const info = getTypeBadgeInfo(newType);
@@ -4403,6 +4414,7 @@
     let materialTotal = 0;
     let myLaborTotal = 0;
     let subTotal = 0;
+    let empTotal = 0;
     let totalItems = 0;
 
     // Line items table
@@ -4426,6 +4438,7 @@
       // Track by type
       const lt = row.dataset.lineType;
       if (lt === 'mylabor') { myLaborTotal += amount; }
+      else if (lt === 'employee') { empTotal += amount; }
       else if (lt === 'sub') { subTotal += amount; }
       else { materialTotal += amount; }
       grandTotal += amount;
@@ -4457,19 +4470,23 @@
     document.getElementById('sidebarLineCount').textContent = totalItems;
 
     // Section subtotals — show only types that have values
-    const hasMultipleTypes = (materialTotal > 0 ? 1 : 0) + (myLaborTotal > 0 ? 1 : 0) + (subTotal > 0 ? 1 : 0) > 1;
+    const hasMultipleTypes = (materialTotal > 0 ? 1 : 0) + (myLaborTotal > 0 ? 1 : 0) + (subTotal > 0 ? 1 : 0) + (empTotal > 0 ? 1 : 0) > 1;
     const matSubEl = document.getElementById('materialSubtotal');
     const labSubEl = document.getElementById('laborSubtotal');
     const subSubEl = document.getElementById('subSubtotal');
+    const empSubEl = document.getElementById('empSubtotal');
     if (matSubEl) matSubEl.textContent = formatMoney(materialTotal);
     if (labSubEl) labSubEl.textContent = formatMoney(myLaborTotal);
     if (subSubEl) subSubEl.textContent = formatMoney(subTotal);
+    if (empSubEl) empSubEl.textContent = formatMoney(empTotal);
     const matRow = document.getElementById('materialSubRow');
     const labRow = document.getElementById('laborSubRow');
     const subRow = document.getElementById('subSubRow');
+    const empRow = document.getElementById('empSubRow');
     if (matRow) matRow.style.display = hasMultipleTypes && materialTotal > 0 ? 'flex' : 'none';
     if (labRow) labRow.style.display = hasMultipleTypes && myLaborTotal > 0 ? 'flex' : 'none';
     if (subRow) subRow.style.display = hasMultipleTypes && subTotal > 0 ? 'flex' : 'none';
+    if (empRow) empRow.style.display = hasMultipleTypes && empTotal > 0 ? 'flex' : 'none';
 
     // O&P calculation
     let opAmt = 0;
@@ -7039,6 +7056,7 @@
     let invMaterialTotal = 0;
     let invMyLaborTotal = 0;
     let invSubTotal = 0;
+    let invEmpTotal = 0;
 
     document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
       const inputs = row.querySelectorAll('input[type="number"]');
@@ -7059,6 +7077,7 @@
 
       const lt = row.dataset.lineType;
       if (lt === 'mylabor') { invMyLaborTotal += amount; }
+      else if (lt === 'employee') { invEmpTotal += amount; }
       else if (lt === 'sub') { invSubTotal += amount; }
       else { invMaterialTotal += amount; }
       subtotal += amount;
@@ -7081,19 +7100,23 @@
     document.getElementById('invSubtotal').textContent = formatMoney(subtotal);
 
     // Section subtotals — show only when multiple types
-    const hasMultipleTypes = (invMaterialTotal > 0 ? 1 : 0) + (invMyLaborTotal > 0 ? 1 : 0) + (invSubTotal > 0 ? 1 : 0) > 1;
+    const hasMultipleTypes = (invMaterialTotal > 0 ? 1 : 0) + (invMyLaborTotal > 0 ? 1 : 0) + (invSubTotal > 0 ? 1 : 0) + (invEmpTotal > 0 ? 1 : 0) > 1;
     const matSubEl = document.getElementById('invMaterialSubtotal');
     const labSubEl = document.getElementById('invLaborSubtotal');
     const subSubEl = document.getElementById('invSubSubtotal');
+    const empSubEl = document.getElementById('invEmpSubtotal');
     if (matSubEl) matSubEl.textContent = formatMoney(invMaterialTotal);
     if (labSubEl) labSubEl.textContent = formatMoney(invMyLaborTotal);
     if (subSubEl) subSubEl.textContent = formatMoney(invSubTotal);
+    if (empSubEl) empSubEl.textContent = formatMoney(invEmpTotal);
     const matRow = document.getElementById('invMaterialSubRow');
     const labRow = document.getElementById('invLaborSubRow');
     const subRow = document.getElementById('invSubSubRow');
+    const empRow = document.getElementById('invEmpSubRow');
     if (matRow) matRow.style.display = hasMultipleTypes && invMaterialTotal > 0 ? 'flex' : 'none';
     if (labRow) labRow.style.display = hasMultipleTypes && invMyLaborTotal > 0 ? 'flex' : 'none';
     if (subRow) subRow.style.display = hasMultipleTypes && invSubTotal > 0 ? 'flex' : 'none';
+    if (empRow) empRow.style.display = hasMultipleTypes && invEmpTotal > 0 ? 'flex' : 'none';
 
     // O&P calculation
     let invOpAmt = 0;
@@ -7421,15 +7444,7 @@
   async function saveInvoiceAndReturn() {
     if (!validateInvoiceForm()) return;
     const data = collectInvoiceData();
-    const items = [];
-    document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
-      const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
-      const unit = row.querySelector('.unit-select')?.value || 'each';
-      const inputs = row.querySelectorAll('input[type="number"]');
-      const note = row.querySelector('.line-note-input')?.value || '';
-      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', note, source: row.dataset.sourceName || '' });
-    });
-    const invId = await dbSaveInvoice(data, items);
+    const invId = await dbSaveInvoice(data, data.items);
     currentInvId = invId;
     await refreshInvoices();
     showPage('invoices');
@@ -7630,15 +7645,7 @@
 
   async function saveInvoiceOnly() {
     const data = collectInvoiceData();
-    const items = [];
-    document.querySelectorAll('#invLineItemsBody .line-item-row').forEach(row => {
-      const desc = (row.querySelector('.line-desc-wrap input') || row.querySelector('input[type="text"]'))?.value || '';
-      const unit = row.querySelector('.unit-select')?.value || 'each';
-      const inputs = row.querySelectorAll('input[type="number"]');
-      const note = row.querySelector('.line-note-input')?.value || '';
-      items.push({ desc, unit, qty: inputs[0]?.value || '', rate: inputs[1]?.value || '', note, source: row.dataset.sourceName || '' });
-    });
-    const invId = await dbSaveInvoice(data, items);
+    const invId = await dbSaveInvoice(data, data.items);
     currentInvId = invId;
     await refreshInvoices();
     return invId;
@@ -8148,13 +8155,13 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   function pnlNextMonth() { pnlMonth++; if (pnlMonth > 11) { pnlMonth = 0; pnlYear++; } renderPnl(); }
 
   // Calculate auto-costs from invoice line items
-  // Material and Sub/Employee items ALWAYS have a cost (base rate × qty)
+  // Material, Sub, and Employee items ALWAYS have a cost (base rate × qty)
   // My Labor items NEVER have a cost (full amount is profit)
   function getInvoiceAutoCosts(inv) {
     if (!inv.items || inv.items.length === 0) return 0;
     return inv.items.reduce((total, item) => {
       const lt = item.lineType || 'material';
-      if (lt === 'material' || lt === 'sub') {
+      if (lt === 'material' || lt === 'sub' || lt === 'employee') {
         const qty = parseFloat(item.qty) || 0;
         const baseCost = parseFloat(item.rate) || 0;
         return total + (qty * baseCost);
@@ -8167,7 +8174,10 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   function getInvoiceAutoCostItems(inv) {
     if (!inv.items || inv.items.length === 0) return [];
     return inv.items
-      .filter(item => (item.lineType || 'material') === 'material' || (item.lineType || 'material') === 'sub')
+      .filter(item => {
+        const lt = item.lineType || 'material';
+        return lt === 'material' || lt === 'sub' || lt === 'employee';
+      })
       .map(item => {
         const qty = parseFloat(item.qty) || 0;
         const baseCost = parseFloat(item.rate) || 0;
@@ -8253,8 +8263,10 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       // Auto-costs from invoices — split by type
       if (d.autoCostItems.length > 0) {
         const matCosts = d.autoCostItems.filter(ac => ac.lineType === 'material');
+        const empCosts = d.autoCostItems.filter(ac => ac.lineType === 'employee');
         const subCosts = d.autoCostItems.filter(ac => ac.lineType === 'sub');
         const matTotal = matCosts.reduce((s, ac) => s + ac.totalCost, 0);
+        const empTotal = empCosts.reduce((s, ac) => s + ac.totalCost, 0);
         const subTotal = subCosts.reduce((s, ac) => s + ac.totalCost, 0);
 
         if (matCosts.length > 0) {
@@ -8263,8 +8275,14 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
             expHtml += `<div class="pnl-list-item"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(ac.desc)}</span><span class="pnl-list-secondary">${escapeHtml(ac.clientName || '')} · ${escapeHtml(ac.invoiceNum)} · ${ac.qty} × ${formatMoney(ac.baseCost)}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(ac.totalCost)}</span></div>`;
           });
         }
+        if (empCosts.length > 0) {
+          expHtml += `<div class="pnl-cat-header" style="color:#7C3AED;">🟣 Employee Costs · ${formatMoney(empTotal)}</div>`;
+          empCosts.forEach(ac => {
+            expHtml += `<div class="pnl-list-item"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(ac.desc)}</span><span class="pnl-list-secondary">${escapeHtml(ac.clientName || '')} · ${escapeHtml(ac.invoiceNum)} · ${ac.qty} × ${formatMoney(ac.baseCost)}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(ac.totalCost)}</span></div>`;
+          });
+        }
         if (subCosts.length > 0) {
-          expHtml += `<div class="pnl-cat-header" style="color:var(--amber-deep);">🟠 Sub/Employee Costs · ${formatMoney(subTotal)}</div>`;
+          expHtml += `<div class="pnl-cat-header" style="color:var(--amber-deep);">🟠 Sub Costs · ${formatMoney(subTotal)}</div>`;
           subCosts.forEach(ac => {
             expHtml += `<div class="pnl-list-item"><div class="pnl-list-left"><span class="pnl-list-primary">${escapeHtml(ac.desc)}</span><span class="pnl-list-secondary">${escapeHtml(ac.clientName || '')} · ${escapeHtml(ac.invoiceNum)} · ${ac.qty} × ${formatMoney(ac.baseCost)}</span></div><span class="pnl-list-amount" style="color:var(--red);">-${formatMoney(ac.totalCost)}</span></div>`;
           });
@@ -8287,6 +8305,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
     // Summary
     const matAutoCost = d.autoCostItems.filter(ac => ac.lineType === 'material').reduce((s, ac) => s + ac.totalCost, 0);
+    const empAutoCost = d.autoCostItems.filter(ac => ac.lineType === 'employee').reduce((s, ac) => s + ac.totalCost, 0);
     const subAutoCost = d.autoCostItems.filter(ac => ac.lineType === 'sub').reduce((s, ac) => s + ac.totalCost, 0);
     const jobExp = d.exp.filter(e => e.quote_id || e.invoice_id);
     const overheadExp = d.exp.filter(e => !e.quote_id && !e.invoice_id);
@@ -8307,7 +8326,8 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     document.getElementById('pnlMonthlySummary').innerHTML = `
       <div class="pnl-summary-row"><span>Revenue</span><span style="color:var(--green);">${formatMoney(d.revTotal)}</span></div>
       ${matAutoCost > 0 ? `<div class="pnl-summary-row"><span>Material Costs (auto)</span><span>-${formatMoney(matAutoCost)}</span></div>` : ''}
-      ${subAutoCost > 0 ? `<div class="pnl-summary-row"><span>Sub/Employee Costs (auto)</span><span>-${formatMoney(subAutoCost)}</span></div>` : ''}
+      ${empAutoCost > 0 ? `<div class="pnl-summary-row"><span>Employee Costs (auto)</span><span>-${formatMoney(empAutoCost)}</span></div>` : ''}
+      ${subAutoCost > 0 ? `<div class="pnl-summary-row"><span>Sub Costs (auto)</span><span>-${formatMoney(subAutoCost)}</span></div>` : ''}
       <div class="pnl-summary-row"><span>Manual Expenses</span><span>-${formatMoney(jobCost + overheadCost)}</span></div>
       <div class="pnl-summary-total"><span>Net Profit</span><span style="color:${d.profit >= 0 ? 'var(--green)' : '#ef4444'};">${formatMoney(d.profit)}</span></div>
       ${vsHtml}
@@ -8385,14 +8405,19 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
             ${(() => {
               if (!j.autoCostItems || j.autoCostItems.length === 0) return '';
               const matItems = j.autoCostItems.filter(ac => ac.lineType === 'material');
+              const empItems = j.autoCostItems.filter(ac => ac.lineType === 'employee');
               const subItems = j.autoCostItems.filter(ac => ac.lineType === 'sub');
               let html = '';
               if (matItems.length > 0) {
                 html += `<div class="pnl-job-section-label" style="margin-top:8px;color:var(--green);">🟢 Material Costs</div>`;
                 html += matItems.map(ac => `<div class="pnl-job-row"><span>${escapeHtml(ac.desc)}<br><span style="font-size:10px;color:var(--gray);">${ac.qty} × ${formatMoney(ac.baseCost)} (your cost)</span></span><span></span><span style="font-family:var(--font-mono);color:var(--red);text-align:right;">-${formatMoney(ac.totalCost)}</span><span></span></div>`).join('');
               }
+              if (empItems.length > 0) {
+                html += `<div class="pnl-job-section-label" style="margin-top:8px;color:#7C3AED;">🟣 Employee Costs</div>`;
+                html += empItems.map(ac => `<div class="pnl-job-row"><span>${escapeHtml(ac.desc)}<br><span style="font-size:10px;color:var(--gray);">${ac.qty} × ${formatMoney(ac.baseCost)} (their rate)</span></span><span></span><span style="font-family:var(--font-mono);color:var(--red);text-align:right;">-${formatMoney(ac.totalCost)}</span><span></span></div>`).join('');
+              }
               if (subItems.length > 0) {
-                html += `<div class="pnl-job-section-label" style="margin-top:8px;color:var(--amber-deep);">🟠 Sub/Employee Costs</div>`;
+                html += `<div class="pnl-job-section-label" style="margin-top:8px;color:var(--amber-deep);">🟠 Sub Costs</div>`;
                 html += subItems.map(ac => `<div class="pnl-job-row"><span>${escapeHtml(ac.desc)}<br><span style="font-size:10px;color:var(--gray);">${ac.qty} × ${formatMoney(ac.baseCost)} (their rate)</span></span><span></span><span style="font-family:var(--font-mono);color:var(--red);text-align:right;">-${formatMoney(ac.totalCost)}</span><span></span></div>`).join('');
               }
               return html;
