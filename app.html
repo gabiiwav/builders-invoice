@@ -6640,9 +6640,28 @@
 
   function updateStripeUI(profile) {
     if (profile?.stripe_account_id) {
-      document.getElementById('stripeNotConnected').style.display = 'none';
-      document.getElementById('stripeConnected').style.display = '';
-      document.getElementById('stripeAccountDisplay').textContent = profile.stripe_account_id;
+      // Verify the account is actually active by checking with the server
+      fetch('/api/stripe-connect-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: profile.stripe_account_id })
+      }).then(r => r.json()).then(data => {
+        if (data.charges_enabled) {
+          document.getElementById('stripeNotConnected').style.display = 'none';
+          document.getElementById('stripeConnected').style.display = '';
+          document.getElementById('stripeAccountDisplay').textContent = profile.stripe_account_id;
+        } else {
+          // Account exists but onboarding not complete
+          document.getElementById('stripeNotConnected').style.display = '';
+          document.getElementById('stripeConnected').style.display = 'none';
+          document.getElementById('stripeConnectBtn').textContent = 'Finish Stripe Setup →';
+        }
+      }).catch(() => {
+        // If verification fails, fall back to showing connected
+        document.getElementById('stripeNotConnected').style.display = 'none';
+        document.getElementById('stripeConnected').style.display = '';
+        document.getElementById('stripeAccountDisplay').textContent = profile.stripe_account_id;
+      });
     } else {
       document.getElementById('stripeNotConnected').style.display = '';
       document.getElementById('stripeConnected').style.display = 'none';
