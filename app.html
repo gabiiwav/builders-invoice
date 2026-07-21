@@ -2023,31 +2023,16 @@
     <div id="authForgotView" style="display:none;">
       <div style="font-size:48px;text-align:center;margin-bottom:16px;">🔑</div>
       <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">Reset password</h3>
-      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:20px;">Enter your email and we'll send you a 6-digit code.</p>
+      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:20px;">Enter your email and we'll send you a secure reset link.</p>
       <div class="auth-error" id="forgotError"></div>
       <div class="auth-field"><label>Email</label><input type="email" id="forgotEmail" placeholder="you@email.com" onkeydown="if(event.key==='Enter')sendResetCode()"></div>
-      <button class="auth-btn auth-btn-primary" id="forgotSubmitBtn" onclick="sendResetCode()">Send Reset Code</button>
+      <button class="auth-btn auth-btn-primary" id="forgotSubmitBtn" onclick="sendResetCode()">Send Reset Link</button>
       <div style="text-align:center;margin-top:12px;">
         <a href="#" onclick="backToLogin();return false" style="font-size:13px;color:var(--amber);text-decoration:none;font-weight:500;">← Back to log in</a>
       </div>
     </div>
 
-    <!-- Forgot Password — Step 2: Enter Code -->
-    <div id="authCodeView" style="display:none;">
-      <div style="font-size:48px;text-align:center;margin-bottom:16px;">📧</div>
-      <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">Check your email</h3>
-      <p style="font-size:13px;color:var(--gray);text-align:center;margin-bottom:4px;">We sent a 6-digit code to:</p>
-      <p style="font-size:14px;font-weight:600;color:var(--ink);text-align:center;margin-bottom:20px;" id="resetEmailDisplay"></p>
-      <div class="auth-error" id="codeError"></div>
-      <div class="auth-field"><label>6-Digit Code</label><input type="text" id="resetCode" placeholder="000000" maxlength="6" style="text-align:center;font-family:var(--font-mono);font-size:24px;letter-spacing:8px;" onkeydown="if(event.key==='Enter')verifyResetCode()"></div>
-      <button class="auth-btn auth-btn-primary" id="codeSubmitBtn" onclick="verifyResetCode()">Verify Code</button>
-      <div style="text-align:center;margin-top:12px;display:flex;justify-content:center;gap:16px;">
-        <a href="#" onclick="sendResetCode();return false" style="font-size:12px;color:var(--gray);text-decoration:none;">Resend code</a>
-        <a href="#" onclick="backToLogin();return false" style="font-size:12px;color:var(--amber);text-decoration:none;font-weight:500;">← Back to log in</a>
-      </div>
-    </div>
-
-    <!-- Forgot Password — Step 3: New Password -->
+    <!-- Forgot Password — New Password -->
     <div id="authResetView" style="display:none;">
       <div style="font-size:48px;text-align:center;margin-bottom:16px;">🔐</div>
       <h3 style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:8px;">New password</h3>
@@ -3319,6 +3304,20 @@
   let _profileCache = null;
   let _stripePayUrl = ''; // Used by buildInvoiceHtml for Stripe pay button
 
+  async function authFetch(url, options = {}) {
+    const { data } = await sb.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error('Your session expired. Please log in again.');
+    return fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
   // EmailJS
   try { emailjs.init('PcnA2CmC9QK_bs_bw'); } catch(e) { console.warn('EmailJS not loaded:', e); }
 
@@ -3341,10 +3340,9 @@
     if (!p) return 0;
     const currentMonth = new Date().toISOString().slice(0, 7); // "2026-04"
     if (p.quota_reset_month !== currentMonth) {
-      // Month rolled over — reset client-side and save
+      // Month rolled over — update the UI cache; the database trigger resets atomically.
       p.quotes_this_month = 0;
       p.quota_reset_month = currentMonth;
-      sb.from('profiles').update({ quotes_this_month: 0, quota_reset_month: currentMonth }).eq('id', currentUser.id).then(() => {});
     }
     return p.quotes_this_month || 0;
   }
@@ -3352,16 +3350,6 @@
   function hasQuoteQuota() {
     if (!isFree()) return true;
     return getQuotasThisMonth() < FREE_QUOTE_LIMIT;
-  }
-
-  async function incrementQuoteQuota() {
-    if (!_profileCache) return;
-    const current = getQuotasThisMonth();
-    _profileCache.quotes_this_month = current + 1;
-    await sb.from('profiles').update({
-      quotes_this_month: current + 1,
-      quota_reset_month: new Date().toISOString().slice(0, 7)
-    }).eq('id', currentUser.id);
   }
 
   // Upgrade prompt — shows a toast-style banner
@@ -3393,6 +3381,23 @@
   // ══════════════════════════════════
   //  SHARED DOCUMENT VIEWER
   // ══════════════════════════════════
+  function sanitizeDocumentHtml(html) {
+    const parsed = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    parsed.querySelectorAll('script, iframe, object, embed, form, input, button, textarea, select, meta, base, link').forEach(el => el.remove());
+    parsed.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        const name = attr.name.toLowerCase();
+        const value = attr.value.trim().toLowerCase();
+        if (name.startsWith('on') || name === 'srcdoc') el.removeAttribute(attr.name);
+        if ((name === 'href' || name === 'src' || name === 'xlink:href') && /^(javascript|data:text\/html):/.test(value)) {
+          el.removeAttribute(attr.name);
+        }
+      });
+      if (el.tagName === 'A') el.setAttribute('rel', 'noopener noreferrer');
+    });
+    return parsed.body.innerHTML;
+  }
+
   // Check synchronously FIRST so auth listener doesn't interfere
   const __docId = new URLSearchParams(window.location.search).get('doc');
   if (__docId) {
@@ -3414,8 +3419,9 @@
     // Fetch document async
     (async () => {
       try {
-        const { data, error } = await sb.from('shared_documents').select('html_content, doc_type').eq('id', __docId).single();
-        if (error || !data) {
+        const response = await fetch('/api/shared-document?id=' + encodeURIComponent(__docId));
+        const data = response.ok ? await response.json() : null;
+        if (!data) {
           viewer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:16px;">📄</div><div style="font-size:18px;font-weight:600;color:#1C1C1E;">Document not found</div><div style="font-size:14px;color:#6B7280;margin-top:8px;">This link may have expired or been removed.</div></div>';
           return;
         }
@@ -3425,7 +3431,7 @@
             <span style="font-family:'Plus Jakarta Sans',sans-serif;color:white;font-size:14px;font-weight:600;">Builders<span style="color:#E07A2F;">Invoice</span> <span style="color:rgba(255,255,255,0.4);font-weight:400;margin-left:8px;">${docType}</span></span>
             <button onclick="window.print()" style="padding:8px 20px;background:#E07A2F;color:white;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Save as PDF</button>
           </div>
-          <div style="max-width:900px;margin:0 auto;background:white;min-height:calc(100vh - 48px);">${data.html_content}</div>
+          <div style="max-width:900px;margin:0 auto;background:white;min-height:calc(100vh - 48px);">${sanitizeDocumentHtml(data.html_content)}</div>
         `;
       } catch(e) {
         console.error('Doc fetch error:', e);
@@ -3561,7 +3567,6 @@
     document.getElementById('authMainView').style.display = 'none';
     document.getElementById('authConfirmView').style.display = 'none';
     document.getElementById('authResetView').style.display = 'none';
-    document.getElementById('authCodeView').style.display = 'none';
     document.getElementById('authForgotView').style.display = '';
     document.getElementById('forgotEmail').value = document.getElementById('authEmail').value || '';
     document.getElementById('forgotError').style.display = 'none';
@@ -3571,15 +3576,11 @@
     document.getElementById('authMainView').style.display = '';
     document.getElementById('authConfirmView').style.display = 'none';
     document.getElementById('authForgotView').style.display = 'none';
-    document.getElementById('authCodeView').style.display = 'none';
     document.getElementById('authResetView').style.display = 'none';
     switchAuthTab('login');
   }
 
-  // ── Forgot Password (EmailJS + 6-digit code) ──
-  let resetEmailAddress = '';
-  let resetVerifiedCode = '';
-
+  // ── Forgot Password (Supabase-managed recovery) ──
   async function sendResetCode() {
     const email = document.getElementById('forgotEmail').value.trim();
     const errEl = document.getElementById('forgotError');
@@ -3596,102 +3597,26 @@
     errEl.style.display = 'none';
 
     try {
-      // Generate 6-digit code
-      const code = String(Math.floor(100000 + Math.random() * 900000));
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-
-      // Save to Supabase
-      const { error: dbError } = await sb.from('password_resets').insert({
-        email: email,
-        code: code,
-        expires_at: expiresAt
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname + '?reset=true'
       });
+      if (error) throw error;
 
-      if (dbError) {
-        console.error('DB error:', dbError);
-        errEl.style.display = '';
-        errEl.style.background = 'var(--red-pale)';
-        errEl.style.color = 'var(--red)';
-        errEl.textContent = 'Error saving reset code. Try again.';
-        btn.disabled = false; btn.textContent = 'Send Reset Code';
-        return;
-      }
-
-      // Send via EmailJS
-      await emailjs.send('service_i3t7fwd', 'template_h4pu8aq', {
-        to_email: email,
-        reset_code: code
-      });
-
-      // Show code entry step
-      resetEmailAddress = email;
-      document.getElementById('resetEmailDisplay').textContent = email;
-      document.getElementById('authForgotView').style.display = 'none';
-      document.getElementById('authCodeView').style.display = '';
-      document.getElementById('resetCode').value = '';
-      document.getElementById('resetCode').focus();
+      errEl.style.display = '';
+      errEl.style.background = 'var(--green-pale)';
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = 'Check your email for a secure password-reset link.';
+      btn.textContent = 'Email Sent';
 
     } catch(e) {
-      console.error('Reset code error:', e);
+      console.error('Password reset error:', e);
       errEl.style.display = '';
       errEl.style.background = 'var(--red-pale)';
       errEl.style.color = 'var(--red)';
-      errEl.textContent = 'Failed to send code: ' + (e.text || e.message || 'Try again.');
+      errEl.textContent = 'Failed to send reset link: ' + (e.text || e.message || 'Try again.');
     } finally {
-      btn.disabled = false; btn.textContent = 'Send Reset Code';
-    }
-  }
-
-  async function verifyResetCode() {
-    const code = document.getElementById('resetCode').value.trim();
-    const errEl = document.getElementById('codeError');
-
-    if (!code || code.length !== 6) {
-      errEl.style.display = '';
-      errEl.style.background = 'var(--red-pale)';
-      errEl.style.color = 'var(--red)';
-      errEl.textContent = 'Please enter the 6-digit code.';
-      return;
-    }
-
-    const btn = document.getElementById('codeSubmitBtn');
-    btn.disabled = true; btn.textContent = 'Verifying…';
-    errEl.style.display = 'none';
-
-    try {
-      // Check code against DB
-      const { data, error } = await sb.from('password_resets')
-        .select('*')
-        .eq('code', code)
-        .eq('email', resetEmailAddress)
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString())
-        .limit(1)
-        .single();
-
-      if (error || !data) {
-        errEl.style.display = '';
-        errEl.style.background = 'var(--red-pale)';
-        errEl.style.color = 'var(--red)';
-        errEl.textContent = 'Invalid or expired code. Try again.';
-        btn.disabled = false; btn.textContent = 'Verify Code';
-        return;
-      }
-
-      // Code verified — show new password form
-      resetVerifiedCode = code;
-      document.getElementById('authCodeView').style.display = 'none';
-      document.getElementById('authResetView').style.display = '';
-      document.getElementById('resetPassword').focus();
-
-    } catch(e) {
-      console.error('Verify error:', e);
-      errEl.style.display = '';
-      errEl.style.background = 'var(--red-pale)';
-      errEl.style.color = 'var(--red)';
-      errEl.textContent = 'Error verifying code. Try again.';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Verify Code';
+      btn.disabled = false;
+      if (btn.textContent !== 'Email Sent') btn.textContent = 'Send Reset Link';
     }
   }
 
@@ -3720,17 +3645,13 @@
     btn.disabled = true; btn.textContent = 'Updating…';
 
     try {
-      // Call the Supabase function to reset password
-      const { data, error } = await sb.rpc('reset_user_password', {
-        reset_code: resetVerifiedCode,
-        new_password: pw
-      });
+      const { error } = await sb.auth.updateUser({ password: pw });
 
-      if (error || data === false) {
+      if (error) {
         errEl.style.display = '';
         errEl.style.background = 'var(--red-pale)';
         errEl.style.color = 'var(--red)';
-        errEl.textContent = error?.message || 'Failed to update password. Code may have expired.';
+        errEl.textContent = error.message || 'Failed to update password. The recovery link may have expired.';
         btn.disabled = false; btn.textContent = 'Update Password';
         return;
       }
@@ -3741,10 +3662,8 @@
       errEl.style.color = 'var(--green)';
       errEl.textContent = '✓ Password updated! You can now log in.';
       btn.textContent = 'Done!';
-      resetVerifiedCode = '';
-      resetEmailAddress = '';
-
-      setTimeout(() => {
+      setTimeout(async () => {
+        await sb.auth.signOut();
         backToLogin();
       }, 2000);
 
@@ -3857,17 +3776,18 @@
       // Existing UUID — update
       payload.id = quote.id;
       const { error } = await sb.from('quotes').upsert(payload);
-      if (error) console.error('Quote upsert error:', error);
+      if (error) throw error;
       quoteId = quote.id;
     } else {
       // New quote
       const { data, error } = await sb.from('quotes').insert(payload).select().single();
-      if (error) { console.error('Quote insert error:', error); return null; }
+      if (error) throw error;
       quoteId = data.id;
     }
 
     // Delete old items and re-insert
-    await sb.from('quote_items').delete().eq('quote_id', quoteId);
+    const { error: deleteItemsError } = await sb.from('quote_items').delete().eq('quote_id', quoteId);
+    if (deleteItemsError) throw deleteItemsError;
     if (items && items.length > 0) {
       const itemRows = items.map((item, i) => ({
         quote_id: quoteId,
@@ -3885,7 +3805,8 @@
         markup_value: parseFloat(item.markupValue) || 0,
         client_rate: parseFloat(item.clientRate) || parseFloat(item.rate) || 0,
       }));
-      await sb.from('quote_items').insert(itemRows);
+      const { error: itemError } = await sb.from('quote_items').insert(itemRows);
+      if (itemError) throw itemError;
     }
 
     return quoteId;
@@ -3937,15 +3858,16 @@
     if (invoice.id && typeof invoice.id === 'string' && invoice.id.includes('-')) {
       payload.id = invoice.id;
       const { error } = await sb.from('invoices').upsert(payload);
-      if (error) console.error('Invoice upsert error:', error);
+      if (error) throw error;
       invId = invoice.id;
     } else {
       const { data, error } = await sb.from('invoices').insert(payload).select().single();
-      if (error) { console.error('Invoice insert error:', error); return null; }
+      if (error) throw error;
       invId = data.id;
     }
 
-    await sb.from('invoice_items').delete().eq('invoice_id', invId);
+    const { error: deleteItemsError } = await sb.from('invoice_items').delete().eq('invoice_id', invId);
+    if (deleteItemsError) throw deleteItemsError;
     if (items && items.length > 0) {
       const itemRows = items.map((item, i) => ({
         invoice_id: invId,
@@ -3963,7 +3885,8 @@
         markup_value: parseFloat(item.markupValue) || 0,
         client_rate: parseFloat(item.clientRate) || parseFloat(item.rate) || 0,
       }));
-      await sb.from('invoice_items').insert(itemRows);
+      const { error: itemError } = await sb.from('invoice_items').insert(itemRows);
+      if (itemError) throw itemError;
     }
 
     return invId;
@@ -5158,8 +5081,10 @@
     currentQuoteId = quoteId;
     data.id = quoteId;
 
-    // Increment free tier quota for new quotes
-    if (isNew && isFree()) await incrementQuoteQuota();
+    // New-quote quotas are enforced atomically by the database trigger.
+    if (isNew && isFree() && _profileCache) {
+      _profileCache.quotes_this_month = getQuotasThisMonth() + 1;
+    }
 
     // Save client
     if (data.clientName) {
@@ -6505,12 +6430,6 @@
     }
   }
 
-  // ── Stripe Payment Links (replace with your actual links from Stripe Dashboard) ──
-  const STRIPE_PAYMENT_LINKS = {
-    pro:      'https://buy.stripe.com/test_14A6oG4XtbEveiP1p95Ne03',
-    business: 'https://buy.stripe.com/test_6oU4gy1LhgYP6QnaZJ5Ne00',
-  };
-
   async function handlePlanChange(newTier) {
     const tier = getUserTier();
     const tierOrder = { free: 0, pro: 1, business: 2 };
@@ -6528,19 +6447,13 @@
 
     if (isUpgrade) {
       // Create Stripe Checkout Session via API
-      const priceIds = {
-        pro: 'price_1TKNZ4BimZ1XIzKT4QgWeblP',
-        business: 'price_1TKNZTBimZ1XIzKTu62QITm9',
-      };
       try {
         showToast('Opening checkout…');
-        const resp = await fetch('/api/stripe-subscribe', {
+        const resp = await authFetch('/api/stripe-subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            price_id: priceIds[newTier],
-            user_id: currentUser.id,
-            return_url: window.location.origin + '/app.html'
+            tier: newTier
           })
         });
         const data = await resp.json();
@@ -6561,13 +6474,10 @@
   async function openStripePortal() {
     try {
       showToast('Opening subscription manager…');
-      const resp = await fetch('/api/stripe-portal', {
+      const resp = await authFetch('/api/stripe-portal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: currentUser.id,
-          return_url: window.location.origin + window.location.pathname
-        })
+        body: JSON.stringify({})
       });
       const data = await resp.json();
       if (data.error) {
@@ -6614,14 +6524,10 @@
     if (btn) { btn.textContent = 'Connecting…'; btn.disabled = true; }
 
     try {
-      const resp = await fetch('/api/stripe-connect', {
+      const resp = await authFetch('/api/stripe-connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: currentUser.id,
-          user_email: currentUser.email,
-          return_url: window.location.origin + window.location.pathname
-        })
+        body: JSON.stringify({})
       });
       const data = await resp.json();
       if (data.error) {
@@ -6641,10 +6547,10 @@
   function updateStripeUI(profile) {
     if (profile?.stripe_account_id) {
       // Verify the account is actually active by checking with the server
-      fetch('/api/stripe-connect-status', {
+      authFetch('/api/stripe-connect-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account_id: profile.stripe_account_id })
+        body: JSON.stringify({})
       }).then(r => r.json()).then(data => {
         if (data.charges_enabled) {
           document.getElementById('stripeNotConnected').style.display = 'none';
@@ -6670,16 +6576,11 @@
 
   async function createPaymentLink(invoiceId, amountDollars, description, stripeAccountId) {
     try {
-      const resp = await fetch('/api/stripe-checkout', {
+      const resp = await authFetch('/api/stripe-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          invoice_id: invoiceId,
-          amount_cents: Math.round(amountDollars * 100),
-          description: description,
-          stripe_account_id: stripeAccountId,
-          success_url: window.location.origin + '/app.html?payment=success&invoice=' + invoiceId,
-          cancel_url: window.location.origin + '/app.html?payment=cancelled&invoice=' + invoiceId
+          invoice_id: invoiceId
         })
       });
       const data = await resp.json();
@@ -8224,7 +8125,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     const mStr = String(month + 1).padStart(2, '0');
     const prefix = `${year}-${mStr}`;
 
-    const rev = invoices.filter(inv => inv.date && inv.date.startsWith(prefix));
+    const rev = invoices.filter(inv => inv.status === 'Paid' && inv.date && inv.date.startsWith(prefix));
     const exp = expenses.filter(e => e.date && e.date.startsWith(prefix));
     const revTotal = rev.reduce((s, i) => s + (parseFloat(i.total?.replace(/[$,]/g, '')) || 0), 0);
     const manualExpTotal = exp.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
@@ -8839,7 +8740,16 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
 
   sb.auth.onAuthStateChange(async (event, session) => {
     if (window.__isDocViewer) return; // Don't init app when viewing shared doc
-    if (event === 'INITIAL_SESSION') {
+    if (event === 'PASSWORD_RECOVERY') {
+      currentUser = session?.user || null;
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('appShell').style.display = 'none';
+      document.getElementById('onboardingPage').style.display = 'none';
+      document.getElementById('authPage').style.display = 'flex';
+      document.getElementById('authMainView').style.display = 'none';
+      document.getElementById('authForgotView').style.display = 'none';
+      document.getElementById('authResetView').style.display = '';
+    } else if (event === 'INITIAL_SESSION') {
       // This fires once on page load — determines initial state
       if (session && session.user) {
         if (appInitialized || initInProgress) return;

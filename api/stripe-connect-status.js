@@ -2,21 +2,26 @@
 // Checks if a Stripe Connect account has completed onboarding
 
 const Stripe = require('stripe');
+const { requireUser, sendError } = require('../lib/server-auth');
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
   try {
-    const { account_id } = req.body;
-    if (!account_id) return res.status(400).json({ error: 'account_id required' });
+    const { user, supabase } = await requireUser(req);
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('stripe_account_id')
+      .eq('id', user.id)
+      .single();
+    if (error || !profile?.stripe_account_id) {
+      return res.status(404).json({ error: 'Stripe account not found' });
+    }
 
-    const account = await stripe.accounts.retrieve(account_id);
+    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
 
     return res.status(200).json({
       charges_enabled: account.charges_enabled || false,
@@ -24,7 +29,6 @@ module.exports = async (req, res) => {
       details_submitted: account.details_submitted || false,
     });
   } catch (err) {
-    console.error('Connect status error:', err);
-    return res.status(500).json({ error: err.message, charges_enabled: false });
+    return sendError(res, err, 'Connect status error:');
   }
 };

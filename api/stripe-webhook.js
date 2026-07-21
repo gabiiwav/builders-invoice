@@ -4,13 +4,7 @@
 //   2. Subscription events (tier upgrades/downgrades/cancellations)
 
 const Stripe = require('stripe');
-
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://tlsyajmdxyyainyabakt.supabase.co';
-
-function getSupabase() {
-  const { createClient } = require('@supabase/supabase-js');
-  return createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-}
+const { getServiceClient } = require('../lib/server-auth');
 
 function getTierFromPrice(priceId) {
   const PRICES = {
@@ -32,26 +26,27 @@ async function findUserByCustomer(supabase, customerId) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  const supabase = getSupabase();
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('Stripe webhook rejected: STRIPE_WEBHOOK_SECRET is not configured');
+    return res.status(500).json({ error: 'Webhook is not configured' });
+  }
 
-  // Verify webhook signature if secret is set
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const supabase = getServiceClient();
+
+  // Signature verification is mandatory. Never accept caller-provided event JSON.
   let event;
-  if (process.env.STRIPE_WEBHOOK_SECRET) {
-    const sig = req.headers['stripe-signature'];
-    try {
-      const chunks = [];
-      for await (const chunk of req) {
-        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-      }
-      const rawBody = Buffer.concat(chunks);
-      event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    } catch (err) {
-      console.error('Webhook signature failed:', err.message);
-      return res.status(400).json({ error: 'Invalid signature' });
+  const sig = req.headers['stripe-signature'];
+  try {
+    const chunks = [];
+    for await (const chunk of req) {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
     }
-  } else {
-    event = req.body;
+    const rawBody = Buffer.concat(chunks);
+    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature failed:', err.message);
+    return res.status(400).json({ error: 'Invalid signature' });
   }
 
   try {
@@ -63,10 +58,30 @@ module.exports = async (req, res) => {
         // Invoice payment (Stripe Connect)
         const invoiceId = session.metadata?.invoice_id;
         if (invoiceId) {
-          await supabase
+          const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .select('id, user_id, total')
+            .eq('id', invoiceId)
+            .single();
+          if (invoiceError || !invoice) throw new Error('Paid invoice was not found');
+
+          const expectedAmount = Math.round(Number(invoice.total) * 100);
+          const metadataAmount = Number(session.metadata?.expected_amount_cents);
+          if (
+            session.payment_status !== 'paid' ||
+            session.amount_total !== expectedAmount ||
+            metadataAmount !== expectedAmount ||
+            session.metadata?.user_id !== invoice.user_id
+          ) {
+            throw new Error('Invoice payment verification failed');
+          }
+
+          const { error: updateError } = await supabase
             .from('invoices')
             .update({ status: 'Paid' })
-            .eq('id', invoiceId);
+            .eq('id', invoiceId)
+            .eq('user_id', invoice.user_id);
+          if (updateError) throw updateError;
         }
 
         // Subscription purchase (tier upgrade)
@@ -144,10 +159,11 @@ module.exports = async (req, res) => {
         break;
     }
 
-    res.status(200).json({ received: true });
+    return res.status(200).json({ received: true });
   } catch (err) {
     console.error('Webhook error:', err);
-    res.status(200).json({ received: true, error: err.message });
+    // Non-2xx tells Stripe to retry transient processing failures.
+    return res.status(500).json({ error: 'Webhook processing failed' });
   }
 };
 
