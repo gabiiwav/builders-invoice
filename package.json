@@ -3,7 +3,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test test/security.test.js test/unit/calculations.test.mjs",
+    "test": "node --test test/*.test.js test/unit/*.test.mjs",
     "lint": "node scripts/lint.js",
     "check": "npm run lint && npm test && npm run build",
     "audit": "npm audit --omit=dev"

@@ -5,14 +5,7 @@
 
 const Stripe = require('stripe');
 const { getServiceClient } = require('../lib/server-auth');
-
-function getTierFromPrice(priceId) {
-  const PRICES = {
-    'price_1TKNZ4BimZ1XIzKT4QgWeblP': 'pro',
-    'price_1TKNZTBimZ1XIzKTu62QITm9': 'business',
-  };
-  return PRICES[priceId] || null;
-}
+const { getTierFromPrice, updateProfile } = require('../lib/stripe-subscriptions');
 
 async function findUserByCustomer(supabase, customerId) {
   const { data } = await supabase
@@ -110,12 +103,12 @@ module.exports = async (req, res) => {
               } catch (e) { /* old sub may already be cancelled */ }
             }
 
-            await supabase.from('profiles').update({
+            await updateProfile(supabase, userId, {
               subscription_tier: tier,
               stripe_customer_id: customerId,
               stripe_subscription_id: subscriptionId,
               updated_at: new Date().toISOString(),
-            }).eq('id', userId);
+            });
           }
         }
         break;
@@ -130,11 +123,11 @@ module.exports = async (req, res) => {
           const priceId = subscription.items.data[0]?.price?.id;
           const tier = getTierFromPrice(priceId);
           if (tier) {
-            await supabase.from('profiles').update({
+            await updateProfile(supabase, userId, {
               subscription_tier: tier,
               stripe_subscription_id: subscription.id,
               updated_at: new Date().toISOString(),
-            }).eq('id', userId);
+            });
           }
         }
         break;
@@ -144,11 +137,11 @@ module.exports = async (req, res) => {
         const subscription = event.data.object;
         const userId = await findUserByCustomer(supabase, subscription.customer);
         if (userId) {
-          await supabase.from('profiles').update({
+          await updateProfile(supabase, userId, {
             subscription_tier: 'free',
             stripe_subscription_id: null,
             updated_at: new Date().toISOString(),
-          }).eq('id', userId);
+          });
         }
         break;
       }
