@@ -743,6 +743,17 @@
       <!-- Your Plan -->
       <div id="settingsPlanCard"></div>
 
+      <div class="card" id="testerAccessCard">
+        <div class="card-header"><span class="card-label">Tester Access</span></div>
+        <div class="card-body">
+          <p id="testerAccessStatus" style="font-size:13px;color:var(--gray);margin-bottom:12px;">Have a tester code? Activate 60 days of Business access.</p>
+          <div style="display:flex;gap:8px;max-width:520px;">
+            <input id="testerAccessCode" type="text" autocomplete="off" placeholder="Enter tester code" style="flex:1;text-transform:uppercase;">
+            <button class="btn btn-primary" id="testerAccessBtn" onclick="redeemTesterAccess()">Activate</button>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header"><span class="card-label">Business Info</span></div>
         <div class="card-body">

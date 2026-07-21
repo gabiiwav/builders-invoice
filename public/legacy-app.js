@@ -23,6 +23,8 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let currentUser = null;
   let _profileCache = null;
+  const testerCodeFromUrl = new URLSearchParams(window.location.search).get('tester');
+  if (testerCodeFromUrl) sessionStorage.setItem('builders_tester_code', testerCodeFromUrl);
   let _stripePayUrl = ''; // Used by buildInvoiceHtml for Stripe pay button
   let _repositories = null;
 
@@ -63,8 +65,54 @@
 
   function getUserTier() {
     const p = _profileCache;
-    if (!p || !p.subscription_tier) return 'free';
-    return p.subscription_tier;
+    if (p?.tester_tier === 'business' && p.tester_access_expires_at && new Date(p.tester_access_expires_at).getTime() > Date.now()) {
+      return 'business';
+    }
+    return p?.subscription_tier || 'free';
+  }
+
+  function updateTesterAccessUI() {
+    const status = document.getElementById('testerAccessStatus');
+    const input = document.getElementById('testerAccessCode');
+    const button = document.getElementById('testerAccessBtn');
+    if (!status) return;
+    const expiresAt = _profileCache?.tester_access_expires_at;
+    const active = _profileCache?.tester_tier === 'business' && expiresAt && new Date(expiresAt).getTime() > Date.now();
+    if (active) {
+      const days = Math.max(1, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000));
+      status.textContent = `Business tester access is active for ${days} more day${days === 1 ? '' : 's'} (until ${new Date(expiresAt).toLocaleDateString()}).`;
+      if (input) input.style.display = 'none';
+      if (button) button.style.display = 'none';
+    } else if (expiresAt) {
+      status.textContent = 'Your tester access has ended. Your regular plan is now active.';
+      if (input) input.style.display = 'none';
+      if (button) button.style.display = 'none';
+    }
+  }
+
+  async function redeemTesterAccess(codeOverride) {
+    const input = document.getElementById('testerAccessCode');
+    const button = document.getElementById('testerAccessBtn');
+    const status = document.getElementById('testerAccessStatus');
+    const code = String(codeOverride || input?.value || sessionStorage.getItem('builders_tester_code') || '').trim();
+    if (!code) { if (status) status.textContent = 'Enter your tester access code.'; return; }
+    if (button) { button.disabled = true; button.textContent = 'Activating…'; }
+    try {
+      const response = await authFetch('/api/redeem-tester-access', { method: 'POST', body: JSON.stringify({ code }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not activate tester access');
+      sessionStorage.removeItem('builders_tester_code');
+      _profileCache = null;
+      await dbGetProfile(true);
+      updateTierUI();
+      updateTesterAccessUI();
+      if (window.location.search.includes('tester=')) window.history.replaceState({}, '', window.location.pathname);
+      showToast(result.already_redeemed ? 'Tester access is already active' : '60 days of Business access activated!');
+    } catch (error) {
+      if (status) status.textContent = error.message || 'Could not activate tester access.';
+    } finally {
+      if (button) { button.disabled = false; button.textContent = 'Activate'; }
+    }
   }
 
   function isFree() { return getUserTier() === 'free'; }
@@ -5450,8 +5498,11 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     try { initInvItemGrids(); } catch(e) {}
     Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
     updateTierUI();
+    updateTesterAccessUI();
     showPage('home');
     appInitialized = true;
+    const pendingTesterCode = sessionStorage.getItem('builders_tester_code');
+    if (pendingTesterCode) setTimeout(() => redeemTesterAccess(pendingTesterCode), 250);
   }
 
   // ══════════════════════════════════
@@ -5515,8 +5566,12 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       try { initInvItemGrids(); } catch(e) {}
       Promise.all([refreshQuotes(), refreshInvoices(), refreshClients()]).catch(e => {});
       updateTierUI();
+      updateTesterAccessUI();
       showPage('home');
       appInitialized = true;
+
+      const pendingTesterCode = sessionStorage.getItem('builders_tester_code');
+      if (pendingTesterCode) setTimeout(() => redeemTesterAccess(pendingTesterCode), 250);
 
       // Check if returning from Stripe upgrade
       const urlParams = new URLSearchParams(window.location.search);

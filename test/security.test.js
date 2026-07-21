@@ -8,6 +8,7 @@ const protectedRoutes = [
   'stripe-connect',
   'stripe-portal',
   'stripe-subscribe',
+  'redeem-tester-access',
 ];
 
 for (const route of protectedRoutes) {
@@ -36,4 +37,15 @@ test('shared documents require an exact UUID and disable caching', () => {
   const source = readFileSync('api/shared-document.js', 'utf8');
   assert.match(source, /\^\[0-9a-f\]/);
   assert.match(source, /private, no-store/);
+});
+test('tester access is server redeemed and cannot overwrite paid billing state', () => {
+  const api = readFileSync('api/redeem-tester-access.js', 'utf8');
+  const migration = readFileSync('supabase/migrations/202607200005_tester_access.sql', 'utf8');
+  assert.match(api, /await requireUser\(req\)/);
+  assert.match(api, /matchesTesterCode/);
+  assert.match(api, /redeem_tester_campaign/);
+  assert.match(migration, /unique \(user_id\)/i);
+  assert.match(migration, /tester_access_expires_at/);
+  assert.match(migration, /tester_expires > now\(\)/);
+  assert.doesNotMatch(migration, /set subscription_tier = 'business'/i);
 });

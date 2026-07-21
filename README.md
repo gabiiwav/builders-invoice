@@ -18,6 +18,8 @@ Useful commands:
 - `npm run check` — lint, tests, and production build
 - `npm run audit` — production dependency audit
 
+Shared beta-code behavior is documented in `docs/tester-access.md`.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)
