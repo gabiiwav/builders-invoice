@@ -60,12 +60,14 @@ module.exports = async (req, res) => {
         if (invoiceId) {
           const { data: invoice, error: invoiceError } = await supabase
             .from('invoices')
-            .select('id, user_id, total')
+            .select('id, user_id, total, total_cents')
             .eq('id', invoiceId)
             .single();
           if (invoiceError || !invoice) throw new Error('Paid invoice was not found');
 
-          const expectedAmount = Math.round(Number(invoice.total) * 100);
+          const expectedAmount = Number.isSafeInteger(Number(invoice.total_cents))
+            ? Number(invoice.total_cents)
+            : Math.round(Number(invoice.total) * 100);
           const metadataAmount = Number(session.metadata?.expected_amount_cents);
           if (
             session.payment_status !== 'paid' ||

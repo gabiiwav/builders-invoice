@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
 
     const [{ data: invoice, error: invoiceError }, { data: profile, error: profileError }] = await Promise.all([
       supabase.from('invoices')
-        .select('id, user_id, invoice_num, job_desc, total, status')
+        .select('id, user_id, invoice_num, job_desc, total, total_cents, status')
         .eq('id', invoice_id)
         .eq('user_id', user.id)
         .single(),
@@ -36,7 +36,9 @@ module.exports = async (req, res) => {
     }
     if (invoice.status === 'Paid') return res.status(409).json({ error: 'Invoice is already paid' });
 
-    const amountCents = Math.round(Number(invoice.total) * 100);
+    const amountCents = Number.isSafeInteger(Number(invoice.total_cents))
+      ? Number(invoice.total_cents)
+      : Math.round(Number(invoice.total) * 100);
     if (!Number.isSafeInteger(amountCents) || amountCents < 50) {
       return res.status(400).json({ error: 'Invoice total is not payable' });
     }
