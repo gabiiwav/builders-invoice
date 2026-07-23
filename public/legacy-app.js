@@ -90,13 +90,37 @@
     }
   }
 
+  function showTesterAccessModal() {
+    if (_profileCache?.tester_access_expires_at || _profileCache?.subscription_tier === 'business') return;
+    const modal = document.getElementById('testerAccessModal');
+    const input = document.getElementById('testerModalCode');
+    const pendingCode = sessionStorage.getItem('builders_tester_code') || '';
+    if (input && pendingCode) input.value = pendingCode;
+    if (modal) modal.style.display = 'flex';
+    setTimeout(() => input?.focus(), 50);
+  }
+
+  function closeTesterAccessModal() {
+    const modal = document.getElementById('testerAccessModal');
+    if (modal) modal.style.display = 'none';
+  }
+
   async function redeemTesterAccess(codeOverride) {
     const input = document.getElementById('testerAccessCode');
     const button = document.getElementById('testerAccessBtn');
     const status = document.getElementById('testerAccessStatus');
-    const code = String(codeOverride || input?.value || sessionStorage.getItem('builders_tester_code') || '').trim();
-    if (!code) { if (status) status.textContent = 'Enter your tester access code.'; return; }
+    const modalInput = document.getElementById('testerModalCode');
+    const modalButton = document.getElementById('testerModalActivateBtn');
+    const modalStatus = document.getElementById('testerModalStatus');
+    const code = String(codeOverride || modalInput?.value || input?.value || sessionStorage.getItem('builders_tester_code') || '').trim();
+    if (!code) {
+      if (status) status.textContent = 'Enter your tester access code.';
+      if (modalStatus) { modalStatus.style.display = ''; modalStatus.textContent = 'Enter your tester access code.'; }
+      return;
+    }
     if (button) { button.disabled = true; button.textContent = 'Activating…'; }
+    if (modalButton) { modalButton.disabled = true; modalButton.textContent = 'Activating…'; }
+    if (modalStatus) modalStatus.style.display = 'none';
     try {
       const response = await authFetch('/api/redeem-tester-access', { method: 'POST', body: JSON.stringify({ code }) });
       const result = await response.json();
@@ -106,12 +130,15 @@
       await dbGetProfile(true);
       updateTierUI();
       updateTesterAccessUI();
+      closeTesterAccessModal();
       if (window.location.search.includes('tester=')) window.history.replaceState({}, '', window.location.pathname);
       showToast(result.already_redeemed ? 'Tester access is already active' : '60 days of Business access activated!');
     } catch (error) {
       if (status) status.textContent = error.message || 'Could not activate tester access.';
+      if (modalStatus) { modalStatus.style.display = ''; modalStatus.textContent = error.message || 'Could not activate tester access.'; }
     } finally {
       if (button) { button.disabled = false; button.textContent = 'Activate'; }
+      if (modalButton) { modalButton.disabled = false; modalButton.textContent = 'Activate 60-Day Business Access'; }
     }
   }
 
@@ -5501,8 +5528,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
     updateTesterAccessUI();
     showPage('home');
     appInitialized = true;
-    const pendingTesterCode = sessionStorage.getItem('builders_tester_code');
-    if (pendingTesterCode) setTimeout(() => redeemTesterAccess(pendingTesterCode), 250);
+    setTimeout(showTesterAccessModal, 250);
   }
 
   // ══════════════════════════════════
@@ -5570,8 +5596,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
       showPage('home');
       appInitialized = true;
 
-      const pendingTesterCode = sessionStorage.getItem('builders_tester_code');
-      if (pendingTesterCode) setTimeout(() => redeemTesterAccess(pendingTesterCode), 250);
+      setTimeout(showTesterAccessModal, 250);
 
       // Check if returning from Stripe upgrade
       const urlParams = new URLSearchParams(window.location.search);

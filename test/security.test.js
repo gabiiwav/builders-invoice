@@ -49,3 +49,19 @@ test('tester access is server redeemed and cannot overwrite paid billing state',
   assert.match(migration, /tester_expires > now\(\)/);
   assert.doesNotMatch(migration, /set subscription_tier = 'business'/i);
 });
+
+test('tester redemption fix relies on service-role execute privilege', () => {
+  const migration = readFileSync('supabase/migrations/202607230001_fix_tester_redemption.sql', 'utf8');
+  assert.doesNotMatch(migration, /if current_user/);
+  assert.match(migration, /revoke all on function public\.redeem_tester_campaign\(uuid,text\) from public, anon, authenticated/i);
+  assert.match(migration, /grant execute on function public\.redeem_tester_campaign\(uuid,text\) to service_role/i);
+});
+
+test('tester code modal is shown after login instead of requiring settings navigation', () => {
+  const html = readFileSync('app.html', 'utf8');
+  const browser = readFileSync('public/legacy-app.js', 'utf8');
+  assert.match(html, /id="testerAccessModal"/);
+  assert.match(html, /Activate 60-Day Business Access/);
+  assert.match(browser, /setTimeout\(showTesterAccessModal, 250\)/);
+  assert.doesNotMatch(browser, /setTimeout\(\(\) => redeemTesterAccess\(pendingTesterCode\)/);
+});

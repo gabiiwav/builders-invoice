@@ -1349,5 +1349,17 @@
   </div>
 </div>
 
+<div id="testerAccessModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(20,20,22,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;">
+  <div style="width:min(460px,100%);background:var(--white);border-radius:14px;padding:30px;box-shadow:0 24px 80px rgba(0,0,0,.3);">
+    <div style="font-size:38px;margin-bottom:12px;">🧪</div>
+    <h2 style="font-family:var(--font-display);font-size:24px;color:var(--ink);margin-bottom:8px;">Activate tester access</h2>
+    <p style="font-size:14px;color:var(--gray);line-height:1.55;margin-bottom:18px;">Enter your tester code to unlock every Business feature free for 60 days. No card required.</p>
+    <div id="testerModalStatus" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:7px;background:var(--red-pale);color:var(--red);font-size:13px;"></div>
+    <input id="testerModalCode" type="text" autocomplete="off" placeholder="Enter tester code" style="width:100%;text-transform:uppercase;margin-bottom:12px;" onkeydown="if(event.key==='Enter')redeemTesterAccess()">
+    <button class="btn btn-primary" id="testerModalActivateBtn" onclick="redeemTesterAccess()" style="width:100%;justify-content:center;padding:12px;">Activate 60-Day Business Access</button>
+    <button onclick="closeTesterAccessModal()" style="display:block;width:100%;margin-top:10px;border:0;background:none;color:var(--gray);font-size:13px;cursor:pointer;padding:8px;">Not now</button>
+  </div>
+</div>
+
 </body>
 </html>
