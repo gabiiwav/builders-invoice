@@ -6,8 +6,8 @@
 <title>Builders Invoice</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/src/styles/app.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./src/styles/app.css">
 </head>
 <body>
 
@@ -150,9 +150,16 @@
 <nav class="left-nav" id="leftNav">
 
   <div class="nav-logo">
-    <div class="nav-logo-text">Builders<span>Invoice</span></div>
-    <div class="nav-logo-plan" id="navPlanLabel">Free Plan</div>
+    <div class="nav-brand-lockup">
+      <span class="nav-brand-mark">BI</span>
+      <div>
+        <div class="nav-logo-text">Builders Invoice</div>
+        <div class="nav-logo-plan" id="navPlanLabel">Free Plan</div>
+      </div>
+    </div>
   </div>
+
+  <button class="nav-create-button" onclick="newQuote()">＋ New quote</button>
 
   <a class="nav-item active" id="navHome" onclick="showPage('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1331,8 +1338,8 @@
 
 </div><!-- /appShell -->
 
-<script type="module" src="/src/main.js"></script>
-<script src="/legacy-app.js"></script>
+<script type="module" src="./src/main.js"></script>
+<script src="./public/legacy-app.js"></script>
 
 <!-- Upgrade Banner -->
 <div class="upgrade-banner" id="upgradeBanner" style="cursor:pointer;" onclick="document.getElementById('upgradeBanner').classList.remove('show');showPage('settings');setTimeout(()=>{const el=document.getElementById('settingsPlanCard');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},300);">
