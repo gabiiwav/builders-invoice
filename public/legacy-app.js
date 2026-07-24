@@ -3439,21 +3439,18 @@
   }
 
   async function createPaymentLink(invoiceId, amountDollars, description, stripeAccountId) {
-    try {
-      const resp = await authFetch('/api/stripe-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          invoice_id: invoiceId
-        })
-      });
-      const data = await resp.json();
-      if (data.error) { console.error('Payment link error:', data.error); return null; }
-      return data.url;
-    } catch(e) {
-      console.error('Payment link error:', e);
-      return null;
+    const resp = await authFetch('/api/stripe-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        invoice_id: invoiceId
+      })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.url) {
+      throw new Error(data.error || 'Unable to create a secure Stripe payment link');
     }
+    return data.url;
   }
 
   async function exportAllData() {
@@ -4277,6 +4274,9 @@
       let paymentUrl = '';
       _stripePayUrl = '';
       const profile = _profileCache || await dbGetProfile(true);
+      if (!profile?.stripe_account_id) {
+        throw new Error('Connect Stripe in Settings before emailing an invoice with card payment');
+      }
 
       // Create a direct-charge payment link on the contractor's connected account.
       if (currentInvId) {
@@ -4286,6 +4286,9 @@
           paymentUrl = await createPaymentLink(currentInvId, totalNum, invNum + ' — ' + (jobDesc || 'Invoice'), profile?.stripe_account_id || null) || '';
           _stripePayUrl = paymentUrl;
         }
+      }
+      if (!paymentUrl) {
+        throw new Error('The invoice needs a payable total before it can be emailed');
       }
 
       // Build shareable doc HTML (now includes Stripe button if available)
@@ -4302,6 +4305,8 @@
         doc_num: invNum,
         job_desc: jobDesc ? 'Job: ' + jobDesc : '',
         total: 'Amount Due: ' + total + ' (' + dueLabel + ')' + (paymentUrl ? '\n\n💳 Pay securely by card: ' + paymentUrl + '\nThis permanent invoice link opens a current secure Stripe checkout.' : ''),
+        payment_url: paymentUrl,
+        payment_link: paymentUrl,
         doc_link: docUrl || '',
         biz_name: bizName,
         biz_email: bizEmail
@@ -4316,7 +4321,8 @@
 
     } catch(e) {
       console.error('sendInvoice error:', e);
-      showToast('Error sending email — try again');
+      const message = String(e?.message || e || 'Unknown error');
+      showToast(message.length > 110 ? message.slice(0, 107) + '…' : message);
     } finally {
       sendBtn.textContent = origText;
       sendBtn.disabled = false;
