@@ -2512,6 +2512,8 @@
   function getJobStatus(quote, invoice) {
     if (invoice) {
       if (invoice.status === 'Paid') return { label: 'Paid', class: 'status-paid', phase: 'paid', border: 'border-green' };
+      if (invoice.status === 'Refunded') return { label: 'Refunded', class: 'status-refunded', phase: 'refunded', border: 'border-gray' };
+      if (invoice.status === 'Partially Refunded') return { label: 'Partially Refunded', class: 'status-partially-refunded', phase: 'refunded', border: 'border-gray' };
       if (invoice.status === 'Overdue') return { label: 'Overdue', class: 'status-overdue', phase: 'invoiced', border: 'border-amber' };
       return { label: 'Invoice ' + (invoice.status || 'Unpaid'), class: 'status-unpaid', phase: 'invoiced', border: 'border-amber' };
     }
@@ -2615,7 +2617,7 @@
         } else if (q.status === 'Accepted') {
           actionHtml = `<button class="job-card-action action-invoice" onclick="event.stopPropagation();convertToInvoiceFromDash('${q.id}')">Create Invoice →</button>`;
         }
-      } else if (inv && inv.status !== 'Paid') {
+      } else if (inv && !['Paid', 'Refunded', 'Partially Refunded'].includes(inv.status)) {
         actionHtml = `<button class="job-card-action action-paid" onclick="event.stopPropagation();quickMarkPaid('${inv.id}')">Mark Paid</button>`;
       }
 
@@ -2716,7 +2718,7 @@
 
     // Overdue invoices
     const overdue = invoices.filter(inv => {
-      if (inv.status === 'Paid') return false;
+      if (['Paid', 'Refunded', 'Partially Refunded'].includes(inv.status)) return false;
       if (!inv.dueDate && !inv.date) return false;
       const dueDate = inv.dueDate || inv.date;
       return new Date(dueDate + 'T23:59:59') < now;
@@ -3425,10 +3427,10 @@
           document.getElementById('stripeConnectBtn').textContent = 'Finish Stripe Setup →';
         }
       }).catch(() => {
-        // If verification fails, fall back to showing connected
-        document.getElementById('stripeNotConnected').style.display = 'none';
-        document.getElementById('stripeConnected').style.display = '';
-        document.getElementById('stripeAccountDisplay').textContent = profile.stripe_account_id;
+        // Fail closed: never claim payments are enabled without server verification.
+        document.getElementById('stripeNotConnected').style.display = '';
+        document.getElementById('stripeConnected').style.display = 'none';
+        document.getElementById('stripeConnectBtn').textContent = 'Verify Stripe Connection →';
       });
     } else {
       document.getElementById('stripeNotConnected').style.display = '';
@@ -3688,7 +3690,7 @@
     document.getElementById('invStatTotal').textContent = all.length;
     document.getElementById('invStatUnpaid').textContent = all.filter(r => r.status === 'Unpaid' || r.status === 'Overdue').length;
     document.getElementById('invStatPaid').textContent = all.filter(r => r.status === 'Paid').length;
-    const outstanding = all.filter(r => r.status !== 'Paid').reduce((s,r) => s + (parseFloat(r.total?.replace(/[$,]/g,''))||0), 0);
+    const outstanding = all.filter(r => !['Paid', 'Refunded', 'Partially Refunded'].includes(r.status)).reduce((s,r) => s + (parseFloat(r.total?.replace(/[$,]/g,''))||0), 0);
     document.getElementById('invStatOutstanding').textContent = formatMoney(outstanding);
 
     if (invoices.length === 0) {
@@ -4276,7 +4278,7 @@
       _stripePayUrl = '';
       const profile = _profileCache || await dbGetProfile(true);
 
-      // Create Stripe payment link (works with or without Stripe Connect)
+      // Create a direct-charge payment link on the contractor's connected account.
       if (currentInvId) {
         sendBtn.textContent = 'Creating payment link…';
         const totalNum = parseFloat(total.replace(/[$,]/g, '')) || 0;
@@ -4299,7 +4301,7 @@
         doc_type: 'Invoice',
         doc_num: invNum,
         job_desc: jobDesc ? 'Job: ' + jobDesc : '',
-        total: 'Amount Due: ' + total + ' (' + dueLabel + ')' + (paymentUrl ? '\n\n💳 Pay with card: ' + paymentUrl : ''),
+        total: 'Amount Due: ' + total + ' (' + dueLabel + ')' + (paymentUrl ? '\n\n💳 Pay securely by card: ' + paymentUrl + '\nThis permanent invoice link opens a current secure Stripe checkout.' : ''),
         doc_link: docUrl || '',
         biz_name: bizName,
         biz_email: bizEmail
@@ -4420,7 +4422,7 @@
       ${notes ? `<div style="margin-top:20px;padding:12px 16px;background:#F5F2EE;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6B7280;margin-bottom:4px;">Notes</div><div style="font-size:12px;white-space:pre-wrap;">${escapeHtml(notes)}</div></div>` : ''}
       ${photosHtml}
       ${buildPaymentHandlesHtml()}
-      ${typeof _stripePayUrl !== 'undefined' && _stripePayUrl ? `<div style="margin-top:16px;text-align:center;"><a href="${_stripePayUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Secure payment powered by Stripe</p></div>` : ''}
+      ${typeof _stripePayUrl !== 'undefined' && _stripePayUrl ? `<div style="margin-top:16px;text-align:center;"><a href="${_stripePayUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Secure payment powered by Stripe · This invoice link remains available and opens a current checkout.</p></div>` : ''}
       <table style="width:100%;margin-top:30px;border-top:1px solid #E0DBD4;padding-top:12px;"><tr><td style="font-size:11px;color:#6B7280;">${escapeHtml(bizName) || 'Builders Invoice'}</td><td style="text-align:right;font-size:11px;color:#6B7280;">Thank you for your business.</td></tr></table>
     </div>`;
   }
@@ -4615,7 +4617,7 @@ ${isPaid ? '<div class="paid-watermark">PAID</div>' : ''}
   <!-- Payment Info -->
   ${(() => { const h = _profileCache?.payment_handles || {}; const parts = []; if(h.cashapp) { const url='https://cash.app/'+encodeURIComponent(h.cashapp.replace(/^\$/,'$')); parts.push('<div>💵 CashApp: <a href="'+url+'" target="_blank" style="color:#00D632;font-weight:700;text-decoration:none;">'+escapeHtml(h.cashapp)+'</a></div>'); } if(h.venmo) { const url='https://venmo.com/'+encodeURIComponent(h.venmo.replace(/^@/,'')); parts.push('<div>💙 Venmo: <a href="'+url+'" target="_blank" style="color:#3D95CE;font-weight:700;text-decoration:none;">'+escapeHtml(h.venmo)+'</a></div>'); } if(h.paypal) { const url='https://paypal.me/'+encodeURIComponent(h.paypal.replace(/^@/,'')); parts.push('<div>🅿️ PayPal: <a href="'+url+'" target="_blank" style="color:#003087;font-weight:700;text-decoration:none;">'+escapeHtml(h.paypal)+'</a></div>'); } if(h.zelle) parts.push('<div>⚡ Zelle: <strong>'+escapeHtml(h.zelle)+'</strong></div>'); return parts.length ? '<div style="margin-bottom:24px;padding:16px 20px;background:#F5F2EE;border-radius:8px;"><p style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6B7280;margin-bottom:10px;">Pay With</p><div style="font-size:14px;color:#3E3E44;line-height:2.2;">'+parts.join('')+'</div></div>' : ''; })()}
 
-  ${stripePayUrl ? `<div style="margin-bottom:24px;text-align:center;"><a href="${stripePayUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Secure payment powered by Stripe</p></div>` : ''}
+  ${stripePayUrl ? `<div style="margin-bottom:24px;text-align:center;"><a href="${stripePayUrl}" target="_blank" style="display:inline-block;padding:14px 36px;background:#635BFF;color:white;border-radius:8px;font-family:sans-serif;font-size:16px;font-weight:700;text-decoration:none;">💳 Pay with Card</a><p style="font-size:11px;color:#6B7280;margin-top:8px;">Secure payment powered by Stripe · This invoice link remains available and opens a current checkout.</p></div>` : ''}
 
   <!-- Footer -->
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E0DBD4;display:flex;justify-content:space-between;align-items:center;">

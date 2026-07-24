@@ -1564,6 +1564,8 @@
   .status-unpaid::before { background:var(--amber); }
   .status-paid { background:var(--green-pale); color:var(--green); }
   .status-paid::before { background:var(--green); }
+  .status-refunded, .status-partially-refunded { background:#EEE8DE; color:#706D67; }
+  .status-refunded::before, .status-partially-refunded::before { background:#8C867F; }
   .status-overdue { background:var(--red-pale); color:var(--red); }
   .status-overdue::before { background:var(--red); }
 

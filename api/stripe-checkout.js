@@ -1,6 +1,6 @@
-// /api/stripe-checkout.js
-// Creates a Stripe Checkout Session for one-time invoice payments
-// Supports both direct payments and Stripe Connect
+// Returns a permanent Builders Invoice payment URL for an owned invoice.
+// A fresh/reusable Stripe Checkout Session is resolved only when the customer
+// opens that URL, avoiding expired links in long-lived invoice emails.
 
 const Stripe = require('stripe');
 const { requireUser, getAppOrigin, sendError } = require('../lib/server-auth');
@@ -9,18 +9,16 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
   try {
     const { user, supabase } = await requireUser(req);
     const { invoice_id } = req.body || {};
-    if (!invoice_id) {
-      return res.status(400).json({ error: 'invoice_id required' });
+    if (!/^[0-9a-f-]{36}$/i.test(String(invoice_id || ''))) {
+      return res.status(400).json({ error: 'Valid invoice_id required' });
     }
 
     const [{ data: invoice, error: invoiceError }, { data: profile, error: profileError }] = await Promise.all([
       supabase.from('invoices')
-        .select('id, user_id, invoice_num, job_desc, total, total_cents, status')
+        .select('id, user_id, total, total_cents, status')
         .eq('id', invoice_id)
         .eq('user_id', user.id)
         .single(),
@@ -31,10 +29,18 @@ module.exports = async (req, res) => {
     ]);
 
     if (invoiceError || !invoice) return res.status(404).json({ error: 'Invoice not found' });
+    if (['Paid', 'Refunded', 'Partially Refunded'].includes(invoice.status)) {
+      return res.status(409).json({ error: 'Invoice has already received a card payment' });
+    }
     if (profileError || !profile?.stripe_account_id) {
       return res.status(400).json({ error: 'Connect Stripe before accepting card payments' });
     }
-    if (invoice.status === 'Paid') return res.status(409).json({ error: 'Invoice is already paid' });
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+    if (!account.charges_enabled || !account.details_submitted) {
+      return res.status(400).json({ error: 'Finish Stripe onboarding before accepting card payments' });
+    }
 
     const amountCents = Number.isSafeInteger(Number(invoice.total_cents))
       ? Number(invoice.total_cents)
@@ -43,39 +49,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Invoice total is not payable' });
     }
 
-    const appUrl = getAppOrigin(req) + '/app.html';
-
-    const sessionParams = {
-      mode: 'payment',
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: invoice.job_desc || `Invoice ${invoice.invoice_num || ''}`.trim(),
-          },
-          unit_amount: amountCents,
-        },
-        quantity: 1,
-      }],
-      success_url: appUrl + '?payment=success&invoice=' + encodeURIComponent(invoice.id),
-      cancel_url: appUrl + '?payment=cancelled&invoice=' + encodeURIComponent(invoice.id),
-      metadata: {
-        invoice_id: invoice_id,
-        user_id: user.id,
-        expected_amount_cents: String(amountCents),
-      },
-    };
-
-    sessionParams.payment_intent_data = {
-      application_fee_amount: Math.round(amountCents * 0.01),
-      transfer_data: { destination: profile.stripe_account_id },
-    };
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
-
-    return res.status(200).json({ url: session.url });
+    const url = getAppOrigin(req) + '/api/invoice-payment?invoice_id='
+      + encodeURIComponent(invoice.id);
+    return res.status(200).json({ url });
   } catch (err) {
-    return sendError(res, err, 'Invoice checkout error:');
+    return sendError(res, err, 'Invoice payment URL error:');
   }
 };

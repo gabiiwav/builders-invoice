@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./src/styles/app.css">
+<link rel="stylesheet" href="/src/styles/app.css">
 </head>
 <body>
 
@@ -817,8 +817,8 @@
         <div class="card-header"><span class="card-label">Accept Card Payments</span></div>
         <div class="card-body">
           <div id="stripeNotConnected">
-            <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Connect your Stripe account to accept credit card payments on invoices. Clients will see a "Pay with Card" button when you send them an invoice.</p>
-            <p style="font-size:12px;color:var(--gray);margin-bottom:16px;">Stripe charges 2.9% + $0.30 per transaction. Funds go directly to your bank account.</p>
+            <p style="font-size:13px;color:var(--gray);margin-bottom:12px;">Connect your own Standard Stripe account to accept card payments. Clients will see a "Pay with Card" button on invoices.</p>
+            <p style="font-size:12px;color:var(--gray);margin-bottom:16px;">Payments are processed directly in your Stripe account. You control payouts, refunds, disputes, and Stripe fees. Builders Invoice never receives or transfers the invoice funds.</p>
             <button class="btn btn-primary" onclick="connectStripe()" id="stripeConnectBtn">Connect with Stripe →</button>
           </div>
           <div id="stripeConnected" style="display:none;">
@@ -826,7 +826,7 @@
               <span style="width:10px;height:10px;border-radius:50%;background:var(--green);"></span>
               <span style="font-size:14px;font-weight:600;color:var(--green);">Stripe Connected</span>
             </div>
-            <p style="font-size:12px;color:var(--gray);margin-top:8px;">Your invoices now include a "Pay with Card" button. Account: <span id="stripeAccountDisplay" style="font-family:var(--font-mono);font-size:11px;"></span></p>
+            <p style="font-size:12px;color:var(--gray);margin-top:8px;">Invoice card payments go directly through your Stripe account. Builders Invoice does not receive the funds. Account: <span id="stripeAccountDisplay" style="font-family:var(--font-mono);font-size:11px;"></span></p>
             <button class="btn" style="margin-top:12px;background:var(--canvas);border:1.5px solid var(--border);font-size:12px;" onclick="connectStripe()">Update Stripe Settings</button>
           </div>
         </div>
@@ -1338,8 +1338,8 @@
 
 </div><!-- /appShell -->
 
-<script type="module" src="./src/main.js"></script>
-<script src="./public/legacy-app.js"></script>
+<script type="module" src="/src/main.js"></script>
+<script src="/legacy-app.js"></script>
 
 <!-- Upgrade Banner -->
 <div class="upgrade-banner" id="upgradeBanner" style="cursor:pointer;" onclick="document.getElementById('upgradeBanner').classList.remove('show');showPage('settings');setTimeout(()=>{const el=document.getElementById('settingsPlanCard');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},300);">

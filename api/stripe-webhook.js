@@ -19,8 +19,12 @@ async function findUserByCustomer(supabase, customerId) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
 
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error('Stripe webhook rejected: STRIPE_WEBHOOK_SECRET is not configured');
+  const webhookSecrets = [
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
+  ].filter(Boolean);
+  if (webhookSecrets.length === 0) {
+    console.error('Stripe webhook rejected: no webhook secret is configured');
     return res.status(500).json({ error: 'Webhook is not configured' });
   }
 
@@ -36,7 +40,15 @@ module.exports = async (req, res) => {
       chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
     }
     const rawBody = Buffer.concat(chunks);
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    for (const secret of webhookSecrets) {
+      try {
+        event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+        break;
+      } catch (verificationError) {
+        // Try the next configured endpoint secret.
+      }
+    }
+    if (!event) throw new Error('No configured Stripe webhook secret matched');
   } catch (err) {
     console.error('Webhook signature failed:', err.message);
     return res.status(400).json({ error: 'Invalid signature' });
@@ -48,35 +60,38 @@ module.exports = async (req, res) => {
       case 'checkout.session.completed': {
         const session = event.data.object;
 
-        // Invoice payment (Stripe Connect)
+        // Invoice payment: direct charge owned by the connected account.
         const invoiceId = session.metadata?.invoice_id;
         if (invoiceId) {
-          const { data: invoice, error: invoiceError } = await supabase
-            .from('invoices')
-            .select('id, user_id, total, total_cents')
-            .eq('id', invoiceId)
-            .single();
-          if (invoiceError || !invoice) throw new Error('Paid invoice was not found');
-
-          const expectedAmount = Number.isSafeInteger(Number(invoice.total_cents))
-            ? Number(invoice.total_cents)
-            : Math.round(Number(invoice.total) * 100);
+          const attemptId = session.metadata?.payment_attempt_id;
+          if (!attemptId || !event.account) {
+            throw new Error('Invoice payment metadata is incomplete');
+          }
           const metadataAmount = Number(session.metadata?.expected_amount_cents);
           if (
             session.payment_status !== 'paid' ||
-            session.amount_total !== expectedAmount ||
-            metadataAmount !== expectedAmount ||
-            session.metadata?.user_id !== invoice.user_id
+            session.amount_total !== metadataAmount
           ) {
             throw new Error('Invoice payment verification failed');
           }
 
-          const { error: updateError } = await supabase
-            .from('invoices')
-            .update({ status: 'Paid' })
-            .eq('id', invoiceId)
-            .eq('user_id', invoice.user_id);
-          if (updateError) throw updateError;
+          const paymentIntent = await stripe.paymentIntents.retrieve(
+            session.payment_intent,
+            { stripeAccount: event.account },
+          );
+          const chargeId = typeof paymentIntent.latest_charge === 'string'
+            ? paymentIntent.latest_charge
+            : paymentIntent.latest_charge?.id;
+
+          const { error: completeError } = await supabase.rpc('complete_invoice_payment', {
+            attempt_id: attemptId,
+            session_id: session.id,
+            connected_account_id: event.account,
+            paid_amount_cents: session.amount_total,
+            payment_intent: session.payment_intent,
+            charge: chargeId || null,
+          });
+          if (completeError) throw completeError;
         }
 
         // Subscription purchase (tier upgrade)
@@ -111,6 +126,19 @@ module.exports = async (req, res) => {
             });
           }
         }
+        break;
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object;
+        if (!event.account || !charge.amount_refunded) break;
+        const { error: refundError } = await supabase.rpc('record_invoice_refund', {
+          refunded_charge_id: charge.id,
+          connected_account_id: event.account,
+          refund_amount_cents: charge.amount_refunded,
+          fully_refunded: Boolean(charge.refunded),
+        });
+        if (refundError) throw refundError;
         break;
       }
 
