@@ -11,6 +11,19 @@ function sign(payload) {
   return crypto.createHmac('sha256', secret).update(payload).digest('base64url');
 }
 
+function getSafeReturnOrigin(req, fallbackOrigin) {
+  try {
+    const origin = new URL(String(req.headers.origin || '')).origin;
+    const host = new URL(origin).hostname.toLowerCase();
+    const isProduction = host === 'buildersinvoice.com' || host === 'www.buildersinvoice.com';
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    const isVercelProduction = host === 'builders-invoice.vercel.app';
+    return isProduction || isLocal || isVercelProduction ? origin : fallbackOrigin;
+  } catch {
+    return fallbackOrigin;
+  }
+}
+
 module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -22,9 +35,11 @@ module.exports = async (req, res) => {
 
     const appOrigin = getAppOrigin(req);
     const redirectUri = appOrigin + '/api/stripe-connect-callback';
+    const returnOrigin = getSafeReturnOrigin(req, appOrigin);
     const payload = encode({
       user_id: user.id,
       expires_at: Date.now() + 10 * 60 * 1000,
+      return_origin: returnOrigin,
     });
     const state = payload + '.' + sign(payload);
 
