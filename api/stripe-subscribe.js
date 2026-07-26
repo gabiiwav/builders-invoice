@@ -14,9 +14,14 @@ module.exports = async (req, res) => {
   try {
     const { user } = await requireUser(req);
     const { tier } = req.body || {};
+    const proPriceId = process.env.STRIPE_PRO_PRICE_ID;
+    const businessPriceId = process.env.STRIPE_BUSINESS_PRICE_ID;
+    if (!proPriceId || !businessPriceId) {
+      throw new Error('Stripe subscription prices are not configured');
+    }
     const prices = {
-      pro: process.env.STRIPE_PRO_PRICE_ID || 'price_1TKNZ4BimZ1XIzKT4QgWeblP',
-      business: process.env.STRIPE_BUSINESS_PRICE_ID || 'price_1TKNZTBimZ1XIzKTu62QITm9',
+      pro: proPriceId,
+      business: businessPriceId,
     };
     const priceId = prices[tier];
     if (!priceId) {
